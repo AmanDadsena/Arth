@@ -230,6 +230,7 @@ def make_settings(tmp_path, **overrides) -> Settings:
         env="test", firebase_project_id=PROJECT, data_dir=tmp_path,
         data_key=base64.b64encode(b"k" * 32).decode(), data_gov_in_api_key="test-key",
         rate_limit_rps=1000, rate_limit_burst=1000, cors_origins=["http://localhost:5173"],
+        frontend_dist=tmp_path / "no-frontend-build",  # tests never serve the real build
     )
     base.update(overrides)
     return Settings(_env_file=None, **base)

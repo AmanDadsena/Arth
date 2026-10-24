@@ -13,6 +13,7 @@ from .auth import FirebaseVerifier
 from .config import Settings, get_settings
 from .db import Database, load_or_create_key
 from .errors import install_error_handlers
+from .frontend import SpaFiles, page_headers
 from .llm import LLM
 from .middleware import ProtectionMiddleware
 from .routers import router
@@ -89,11 +90,17 @@ def create_app(settings: Settings | None = None, *, http: httpx.AsyncClient | No
     )
     install_error_handlers(app)
     app.include_router(router, prefix=settings.api_prefix)
+    serve_app = (settings.frontend_dist / "index.html").is_file()
+    if serve_app:
+        # Mounted after the API router, so /api/* always reaches the API first.
+        app.mount("/", SpaFiles(directory=settings.frontend_dist, api_prefix=settings.api_prefix), name="app")
+        log.info("serving the web app from %s", settings.frontend_dist)
     # Middleware added later wraps earlier ones. Rate limit + size cap run first
     # inside CORS, so even a 429/413 carries CORS headers the browser can read.
     app.add_middleware(ProtectionMiddleware, prefix=settings.api_prefix,
                        max_body=settings.max_image_bytes + 512 * 1024,
-                       rate=settings.rate_limit_rps, burst=settings.rate_limit_burst)
+                       rate=settings.rate_limit_rps, burst=settings.rate_limit_burst,
+                       page_headers=page_headers(settings.frontend_dist.parent) if serve_app else None)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
