@@ -1,0 +1,182 @@
+{
+  "sub": "Your farm, settings and help — all in one place",
+  "rail": {
+    "label": "Jump to a section",
+    "farm": "Farm",
+    "settings": "Settings",
+    "help": "Help",
+    "privacy": "Privacy",
+    "about": "About"
+  },
+  "hero": {
+    "complete": "Profile {{pct}}% complete",
+    "completeHint_one": "{{count}} quick question left — sharper advice",
+    "completeHint_other": "{{count}} quick questions left — sharper advice",
+    "finish": "Finish my profile",
+    "finishCore": "Add your farm details",
+    "allDone": "Profile complete",
+    "allDoneHint": "Advice is tuned to your farm.",
+    "years_one": "{{count}} yr farming",
+    "years_other": "{{count}} yrs farming",
+    "organic": "Organic",
+    "mixed": "Organic + conventional",
+    "memberSince": "On Arth since {{date}}"
+  },
+  "farmSub": "Tap any tile to change it.",
+  "tile": {
+    "land": "Land",
+    "crops": "Crops",
+    "soil": "Soil",
+    "water": "Water",
+    "tank": "Sprayer tank",
+    "location": "Farm location",
+    "locationHint": "About 1 km accurate — never your exact field",
+    "experience": "Farming for",
+    "ownership": "Land is",
+    "farmingType": "Farming type",
+    "goals": "My goals",
+    "sellsAt": "I sell at",
+    "livestock": "Animals",
+    "moreTitle": "Tell Arth a little more",
+    "moreSub": "Optional — each answer makes the advice fit you better.",
+    "add": "Add",
+    "yearsValue_one": "{{count}} year",
+    "yearsValue_other": "{{count}} years"
+  },
+  "ownership": { "own": "My own", "lease": "Leased", "both": "Own + leased" },
+  "farmingType": { "conventional": "Conventional", "organic": "Organic", "mixed": "Mixed" },
+  "goals": {
+    "more_yield": "More yield",
+    "better_price": "Better price",
+    "less_cost": "Lower cost",
+    "save_water": "Save water",
+    "schemes": "Get schemes",
+    "organic": "Go organic"
+  },
+  "sellsAt": {
+    "mandi": "APMC mandi",
+    "trader": "Local trader",
+    "fpo": "FPO / farmer group",
+    "direct": "Direct to buyers",
+    "contract": "Contract farming"
+  },
+  "livestock": { "cow": "Cow", "buffalo": "Buffalo", "goat": "Goat", "poultry": "Poultry", "none": "No animals" },
+  "q": {
+    "experienceYears": "How many years have you been farming?",
+    "landOwnership": "Is the land your own or leased?",
+    "farmingType": "How do you farm?",
+    "goals": "What matters most to you this year?",
+    "sellsAt": "Where do you usually sell?",
+    "livestock": "Do you keep animals?",
+    "pickMany": "Pick all that fit",
+    "pickOne": "Pick one",
+    "why": "Helps Arth give advice that fits you. Optional."
+  },
+  "sheet": {
+    "save": "Save",
+    "saveNext": "Save & next",
+    "skip": "Skip",
+    "saveFailed": "Couldn't save. Check your internet and try again.",
+    "stepOf": "{{n}} of {{total}}",
+    "years": "years",
+    "less": "Fewer years",
+    "more": "More years"
+  },
+  "quick": {
+    "title": "Shortcuts",
+    "schemes": "Schemes for me",
+    "schemesSub": "See what you qualify for",
+    "weather": "7-day weather",
+    "weatherSub": "Rain & spray days",
+    "label": "Read a label",
+    "labelSub": "Dose for your {{tank}} L tank",
+    "kagaz": "Explain a paper",
+    "kagazSub": "7/12, bank, insurance"
+  },
+  "prefs": {
+    "title": "Settings",
+    "languageSub": "Advice, voice and every screen",
+    "alerts": "Alerts on this phone",
+    "alertsHint": "Saved on this phone only. Phone notifications are coming soon.",
+    "rain": "Rain & spray warnings",
+    "rainSub": "Before rain, strong wind or heat",
+    "price": "Price alerts for my crops",
+    "priceSub": "When {{crops}} prices move",
+    "priceSubNone": "When mandi prices move",
+    "schemes": "Scheme deadlines",
+    "schemesSub": "Last dates to apply"
+  },
+  "help": {
+    "title": "Help & support",
+    "kccTitle": "Kisan Call Centre",
+    "kccBody": "Free advice from agriculture experts, in Marathi and Hindi",
+    "call": "Call {{n}}",
+    "hours": "Free call · 6 am – 10 pm, every day",
+    "guide": "How to use Arth",
+    "guideSub": "6 things Arth can do for you",
+    "share": "Share Arth",
+    "shareSub": "Send it to a farmer friend",
+    "shared": "Thanks for sharing!",
+    "copied": "Link copied — paste it in WhatsApp",
+    "shareFailed": "Couldn't share right now",
+    "shareText": "Arth — farm advice in Marathi, Hindi and English: weather, mandi prices, crop doctor and schemes.",
+    "feedback": "Send feedback",
+    "feedbackSub": "Tell us what to improve",
+    "feedbackSubject": "Arth feedback"
+  },
+  "guide": {
+    "title": "How to use Arth",
+    "steps": [
+      { "t": "Start every morning on Home", "b": "Today's 2–3 jobs, worked out from weather, mandi prices and your crop calendar." },
+      { "t": "Ask by voice", "b": "Tap the mic on any screen and speak in your own language." },
+      { "t": "Photo of a sick leaf", "b": "Crop Doctor names the problem and the treatment. The photo is never saved." },
+      { "t": "Sell at the best price", "b": "Compare nearby mandis after transport cost, and see whether to sell now or wait." },
+      { "t": "Read a pesticide label", "b": "The dose for your tank — only what is printed on the label, never a guess." },
+      { "t": "Find your schemes", "b": "A few yes/no questions show which government schemes you qualify for." }
+    ],
+    "faqTitle": "Common questions",
+    "faq": [
+      { "q": "Is Arth free?", "a": "Yes. No payment and no ads." },
+      { "q": "Does it work without internet?", "a": "Screens you opened recently still show. Photos and voice need internet." },
+      { "q": "Are my photos saved?", "a": "No. They are read once to answer you, then thrown away." }
+    ]
+  },
+  "privacyS": {
+    "title": "Privacy & my data",
+    "hint": "Your data is yours. Here is exactly what Arth keeps.",
+    "keeps": "Arth keeps",
+    "keep1": "Profile — village, crops, land",
+    "keep2": "Redacted question history, deleted after 30 days",
+    "never": "Never kept",
+    "never1": "Photos",
+    "never2": "Voice recordings",
+    "never3": "Aadhaar, PAN, bank or phone numbers",
+    "gemma": "The AI never sees your name or address — only crop, district, season and numbers.",
+    "consent": "You agreed to the privacy notice on {{date}}",
+    "updated": "Profile last changed {{date}}",
+    "download": "Download my data",
+    "downloadSub": "A copy of your profile (JSON file)",
+    "downloaded": "Saved to your phone's downloads",
+    "deleteSub": "Removes your profile, history and account"
+  },
+  "status": {
+    "online": "Online",
+    "offline": "Offline — showing saved data",
+    "demo": "Demo — sample data, nothing is sent"
+  },
+  "aboutS": {
+    "title": "About Arth",
+    "version": "Version {{v}}",
+    "gemma": "Powered by Gemma 4",
+    "gemmaSub": "Google's open AI model — can also run privately on a local machine",
+    "openSource": "Open source",
+    "openSourceSub": "See the code on GitHub",
+    "made": "Made for the farmers of Maharashtra"
+  },
+  "exitDemo": "Exit demo",
+  "error": {
+    "noProfile": "No profile yet",
+    "noProfileBody": "Answer three short questions so the advice fits your farm.",
+    "setup": "Set up my farm"
+  }
+}
