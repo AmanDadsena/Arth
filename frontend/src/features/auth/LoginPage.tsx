@@ -165,8 +165,10 @@ export default function LoginPage() {
     setNote(null)
     try {
       await signInWithGoogle()
-    } catch {
-      setNote(t('failed'))
+    } catch (err) {
+      // Dev builds show Firebase's error code (e.g. auth/popup-blocked): it says what to fix, holds no personal data.
+      const code = (err as { code?: string }).code
+      setNote(import.meta.env.DEV && code ? `${t('failed')} (${code})` : t('failed'))
     } finally {
       setBusy(false)
     }

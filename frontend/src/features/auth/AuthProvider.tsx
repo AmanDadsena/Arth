@@ -5,7 +5,7 @@ import type { User } from 'firebase/auth'
 import { api, setUnauthorizedHandler } from '@/lib/api/client'
 import { DEMO_FARMER, isDemo, setDemo } from '@/lib/demo'
 import { env } from '@/lib/env'
-import { getFirebaseAuth } from '@/lib/firebase'
+import { firebaseReady, getFirebaseAuth } from '@/lib/firebase'
 import { registerTokenGetter } from '@/lib/session'
 import { LANG_KEY, currentLang } from '@/i18n'
 
@@ -104,6 +104,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     qc.clear()
     clearLocal()
     setStatus('signedOut')
+    if (env.firebase) {
+      // Full reload, not a client-side route change: clearLocal() also removes the storage
+      // the live Firebase SDK uses for sign-in, and signing in again in the same page then
+      // fails with auth/internal-error. A fresh page also drops the last user's data from memory.
+      window.location.replace('/login')
+      return
+    }
     nav('/login', { replace: true })
   }, [qc, nav])
 
@@ -113,13 +120,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = useCallback(async () => {
     if (env.firebase) {
-      const [auth, { GoogleAuthProvider, signInWithPopup }] = await Promise.all([getFirebaseAuth(), import('firebase/auth')])
-      const provider = new GoogleAuthProvider()
+      // Normally loaded at app start, so nothing is awaited before the popup opens and
+      // the browser still counts it as part of the click. Only on a very slow first load
+      // do we wait here; then the popup may be blocked and a second tap works.
+      let fb = firebaseReady()
+      if (!fb) {
+        await getFirebaseAuth()
+        fb = firebaseReady()
+      }
+      if (!fb) throw new Error('firebase-not-loaded')
+      const provider = new fb.mod.GoogleAuthProvider()
       provider.setCustomParameters({ prompt: 'select_account' })
       qc.clear()
       setDemo(false)
       try {
-        await signInWithPopup(auth, provider) // onIdTokenChanged sets status
+        await fb.mod.signInWithPopup(fb.auth, provider) // onIdTokenChanged sets status
       } catch (err) {
         // The code (e.g. auth/popup-blocked, auth/unauthorized-domain) says what to fix; it holds no personal data.
         if (import.meta.env.DEV) console.warn('Google sign-in failed:', (err as { code?: string }).code ?? err)
