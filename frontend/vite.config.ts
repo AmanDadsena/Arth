@@ -75,7 +75,13 @@ export default defineConfig({
       },
     }),
   ],
-  server: { host: true, port: 5173 },
+  // `npm run dev`: /api goes to the local backend, so the browser sees one origin
+  // (no CORS, and the same relative API path as production behind one domain).
+  server: {
+    host: true,
+    port: 5173,
+    proxy: { '/api': { target: process.env.ARTH_API_PROXY ?? 'http://127.0.0.1:8000', changeOrigin: false } },
+  },
   preview: { headers: securityHeaders },
   build: {
     rollupOptions: {

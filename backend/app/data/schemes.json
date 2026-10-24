@@ -1,0 +1,117 @@
+{
+  "_note": "Demo data: eligibility simplified from public scheme guidelines. Farmers must verify on the official portal. Each scheme's checks run top to bottom; the first check whose conditions all hold decides the result. A check with no conditions is the default.",
+  "documents": {
+    "aadhaar": { "en": "Aadhaar card", "hi": "आधार कार्ड", "mr": "आधार कार्ड" },
+    "satbara": { "en": "7/12 land extract", "hi": "7/12 भूमि अभिलेख", "mr": "7/12 उतारा" },
+    "passbook": { "en": "Bank passbook", "hi": "बैंक पासबुक", "mr": "बँक पासबुक" },
+    "caste": { "en": "Caste certificate", "hi": "जाति प्रमाण पत्र", "mr": "जात प्रमाणपत्र" },
+    "sowing": { "en": "Sowing certificate", "hi": "बुवाई प्रमाण पत्र", "mr": "पेरणी प्रमाणपत्र" },
+    "quote": { "en": "Dealer quotation", "hi": "डीलर कोटेशन", "mr": "विक्रेत्याचे कोटेशन" }
+  },
+  "schemes": [
+    {
+      "id": "pm-kisan",
+      "name": { "en": "PM-KISAN", "hi": "पीएम-किसान", "mr": "पीएम-किसान" },
+      "benefit": { "en": "₹6,000 a year in 3 instalments", "hi": "साल में ₹6,000, 3 किस्तों में", "mr": "वर्षाला ₹6,000, 3 हप्त्यांत" },
+      "documents": ["aadhaar", "satbara", "passbook"],
+      "officialUrl": "https://pmkisan.gov.in",
+      "checks": [
+        { "when": [{ "field": "ownsLand", "op": "eq", "value": true }, { "field": "incomeTaxPayer", "op": "eq", "value": false }],
+          "eligible": true, "reason": { "en": "You own farmland and do not pay income tax", "hi": "आपके नाम खेती की ज़मीन है और आप आयकर नहीं भरते", "mr": "तुमच्या नावावर शेतजमीन आहे आणि तुम्ही आयकर भरत नाही" } },
+        { "when": [], "eligible": false, "reason": { "en": "Needs land in your name and no income tax", "hi": "आपके नाम ज़मीन और आयकर न भरना ज़रूरी", "mr": "तुमच्या नावावर जमीन आणि आयकर न भरणे आवश्यक" } }
+      ]
+    },
+    {
+      "id": "namo-shetkari",
+      "name": { "en": "Namo Shetkari Mahasanman Nidhi", "hi": "नमो शेतकरी महासम्मान निधि", "mr": "नमो शेतकरी महासन्मान निधी" },
+      "benefit": { "en": "Extra ₹6,000 a year from Maharashtra", "hi": "महाराष्ट्र से साल में ₹6,000 अतिरिक्त", "mr": "महाराष्ट्राकडून वर्षाला अतिरिक्त ₹6,000" },
+      "documents": ["aadhaar", "satbara", "passbook"],
+      "officialUrl": "https://nsmny.mahait.org",
+      "checks": [
+        { "when": [{ "field": "ownsLand", "op": "eq", "value": true }, { "field": "incomeTaxPayer", "op": "eq", "value": false }, { "field": "hasBankAccount", "op": "eq", "value": true }],
+          "eligible": true, "reason": { "en": "You qualify for PM-KISAN, so you get this too", "hi": "आप पीएम-किसान के पात्र हैं, इसलिए यह भी मिलेगा", "mr": "तुम्ही पीएम-किसानसाठी पात्र आहात, म्हणून हेही मिळेल" } },
+        { "when": [], "eligible": false, "reason": { "en": "Only for PM-KISAN farmers with a bank account", "hi": "केवल बैंक खाते वाले पीएम-किसान किसानों के लिए", "mr": "फक्त बँक खाते असलेल्या पीएम-किसान शेतकऱ्यांसाठी" } }
+      ]
+    },
+    {
+      "id": "pmfby",
+      "name": { "en": "PM Fasal Bima Yojana (crop insurance)", "hi": "पीएम फसल बीमा योजना", "mr": "पीएम पीक विमा योजना" },
+      "benefit": { "en": "Insurance for crop loss from rain, drought or pests", "hi": "बारिश, सूखा या कीट से फसल नुकसान का बीमा", "mr": "पाऊस, दुष्काळ किंवा किडीमुळे पिकाच्या नुकसानीचा विमा" },
+      "documents": ["aadhaar", "satbara", "passbook", "sowing"],
+      "officialUrl": "https://pmfby.gov.in",
+      "checks": [
+        { "when": [{ "field": "hasBankAccount", "op": "eq", "value": true }],
+          "eligible": true, "reason": { "en": "Open to owners and tenant farmers with a bank account", "hi": "बैंक खाते वाले मालिक और बटाईदार दोनों के लिए", "mr": "बँक खाते असलेले मालक व कुळ दोघांसाठी" } },
+        { "when": [], "eligible": false, "reason": { "en": "You need a bank account for the claim money", "hi": "दावे की रकम के लिए बैंक खाता चाहिए", "mr": "दाव्याच्या रकमेसाठी बँक खाते हवे" } }
+      ]
+    },
+    {
+      "id": "kcc",
+      "name": { "en": "Kisan Credit Card", "hi": "किसान क्रेडिट कार्ड", "mr": "किसान क्रेडिट कार्ड" },
+      "benefit": { "en": "Crop loan up to ₹3 lakh at 4% if repaid on time", "hi": "समय पर चुकाने पर 4% पर ₹3 लाख तक फसल ऋण", "mr": "वेळेवर फेडल्यास 4% दराने ₹3 लाखांपर्यंत पीक कर्ज" },
+      "documents": ["aadhaar", "satbara", "passbook"],
+      "officialUrl": "https://www.myscheme.gov.in/schemes/kcc",
+      "checks": [
+        { "when": [{ "field": "hasBankAccount", "op": "eq", "value": true }, { "field": "ownsLand", "op": "eq", "value": true }],
+          "eligible": true, "reason": { "en": "You farm land and have a bank account", "hi": "आप खेती करते हैं और बैंक खाता है", "mr": "तुम्ही शेती करता आणि बँक खाते आहे" } },
+        { "when": [{ "field": "hasBankAccount", "op": "eq", "value": true }, { "field": "landAcres", "op": "gt", "value": 0 }],
+          "eligible": true, "reason": { "en": "You farm land and have a bank account", "hi": "आप खेती करते हैं और बैंक खाता है", "mr": "तुम्ही शेती करता आणि बँक खाते आहे" } },
+        { "when": [], "eligible": false, "reason": { "en": "Needs a bank account and land you farm", "hi": "बैंक खाता और खेती की ज़मीन चाहिए", "mr": "बँक खाते आणि कसत असलेली जमीन हवी" } }
+      ]
+    },
+    {
+      "id": "pmksy-drip",
+      "name": { "en": "PMKSY — Per Drop More Crop (drip subsidy)", "hi": "पीएमकेएसवाई — ड्रिप सब्सिडी", "mr": "पीएमकेएसवाय — ठिबक अनुदान" },
+      "benefit": { "en": "Up to 55% subsidy on drip/sprinkler for small farmers", "hi": "छोटे किसानों को ड्रिप/स्प्रिंकलर पर 55% तक सब्सिडी", "mr": "अल्पभूधारकांना ठिबक/तुषारवर 55% पर्यंत अनुदान" },
+      "documents": ["aadhaar", "satbara", "passbook", "quote"],
+      "officialUrl": "https://pmksy.gov.in",
+      "checks": [
+        { "when": [{ "field": "ownsLand", "op": "eq", "value": false }],
+          "eligible": false, "reason": { "en": "Needs land in your name", "hi": "आपके नाम ज़मीन चाहिए", "mr": "तुमच्या नावावर जमीन हवी" } },
+        { "when": [{ "field": "irrigation", "op": "in", "value": ["drip", "sprinkler"] }],
+          "eligible": false, "reason": { "en": "You already have drip or sprinkler", "hi": "आपके पास पहले से ड्रिप या स्प्रिंकलर है", "mr": "तुमच्याकडे आधीच ठिबक किंवा तुषार आहे" } },
+        { "when": [], "eligible": true, "reason": { "en": "You own land and don't have drip yet", "hi": "आपके पास ज़मीन है और अभी ड्रिप नहीं है", "mr": "तुमची जमीन आहे आणि अजून ठिबक नाही" } }
+      ]
+    },
+    {
+      "id": "soil-health-card",
+      "name": { "en": "Soil Health Card", "hi": "मृदा स्वास्थ्य कार्ड", "mr": "मृदा आरोग्य पत्रिका" },
+      "benefit": { "en": "Free soil test with fertiliser advice", "hi": "मुफ़्त मिट्टी जाँच और खाद की सलाह", "mr": "मोफत माती परीक्षण आणि खत सल्ला" },
+      "documents": ["aadhaar", "satbara"],
+      "officialUrl": "https://soilhealth.dac.gov.in",
+      "checks": [
+        { "when": [], "eligible": true, "reason": { "en": "Open to every farmer", "hi": "हर किसान के लिए", "mr": "प्रत्येक शेतकऱ्यासाठी" } }
+      ]
+    },
+    {
+      "id": "mahadbt-mech",
+      "name": { "en": "MahaDBT farm mechanisation", "hi": "महाडीबीटी कृषि यंत्रीकरण", "mr": "महाडीबीटी कृषी यांत्रिकीकरण" },
+      "benefit": { "en": "40–50% subsidy on tractor, rotavator, sprayer", "hi": "ट्रैक्टर, रोटावेटर, स्प्रेयर पर 40–50% सब्सिडी", "mr": "ट्रॅक्टर, रोटाव्हेटर, फवारणी यंत्रावर 40–50% अनुदान" },
+      "documents": ["aadhaar", "satbara", "passbook", "quote"],
+      "officialUrl": "https://mahadbt.maharashtra.gov.in",
+      "checks": [
+        { "when": [{ "field": "ownsLand", "op": "eq", "value": false }],
+          "eligible": false, "reason": { "en": "Needs land in your name and Aadhaar", "hi": "आपके नाम ज़मीन और आधार चाहिए", "mr": "तुमच्या नावावर जमीन आणि आधार हवे" } },
+        { "when": [{ "field": "hasAadhaar", "op": "eq", "value": false }],
+          "eligible": false, "reason": { "en": "Needs land in your name and Aadhaar", "hi": "आपके नाम ज़मीन और आधार चाहिए", "mr": "तुमच्या नावावर जमीन आणि आधार हवे" } },
+        { "when": [{ "field": "isWoman", "op": "eq", "value": true }],
+          "eligible": true, "reason": { "en": "You get the higher 50% rate", "hi": "आपको 50% की ऊँची दर मिलेगी", "mr": "तुम्हाला 50% चा जास्त दर मिळेल" } },
+        { "when": [{ "field": "category", "op": "in", "value": ["sc", "st"] }],
+          "eligible": true, "reason": { "en": "You get the higher 50% rate", "hi": "आपको 50% की ऊँची दर मिलेगी", "mr": "तुम्हाला 50% चा जास्त दर मिळेल" } },
+        { "when": [], "eligible": true, "reason": { "en": "You own land and have Aadhaar", "hi": "आपके पास ज़मीन और आधार है", "mr": "तुमची जमीन आणि आधार आहे" } }
+      ]
+    },
+    {
+      "id": "ambedkar-swavalamban",
+      "name": { "en": "Dr. Babasaheb Ambedkar Krishi Swavalamban Yojana", "hi": "डॉ. बाबासाहेब आंबेडकर कृषि स्वावलंबन योजना", "mr": "डॉ. बाबासाहेब आंबेडकर कृषी स्वावलंबन योजना" },
+      "benefit": { "en": "Up to ₹2.5 lakh for a well, pump, drip", "hi": "कुआँ, पंप, ड्रिप के लिए ₹2.5 लाख तक", "mr": "विहीर, पंप, ठिबकसाठी ₹2.5 लाखांपर्यंत" },
+      "documents": ["aadhaar", "satbara", "passbook", "caste"],
+      "officialUrl": "https://mahadbt.maharashtra.gov.in",
+      "checks": [
+        { "when": [{ "field": "category", "op": "eq", "value": "sc" }, { "field": "ownsLand", "op": "eq", "value": true }],
+          "eligible": true, "reason": { "en": "For SC farmers who own land", "hi": "ज़मीन वाले अनुसूचित जाति के किसानों के लिए", "mr": "जमीन असलेल्या अनुसूचित जातीच्या शेतकऱ्यांसाठी" } },
+        { "when": [], "eligible": false, "reason": { "en": "Only for SC farmers who own land", "hi": "केवल ज़मीन वाले अनुसूचित जाति के किसान", "mr": "फक्त जमीन असलेले अनुसूचित जातीचे शेतकरी" } }
+      ]
+    }
+  ]
+}

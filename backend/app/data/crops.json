@@ -1,0 +1,78 @@
+{
+  "_note": "General Maharashtra crop-calendar guidance for demo use; confirm local dates with the nearest KVK. Windows are MM-DD. 'soils' lists soils the crop does well on; 'water' is how much assured irrigation it needs (low | medium | high). Suitability starts at 'base' and drops one level for an unsuited soil and one or two for rainfed farms on thirsty crops.",
+  "seasons": {
+    "rabi": [
+      {
+        "crop": "onion", "base": "high", "from": "11-01", "to": "12-15", "durationDays": 120,
+        "soils": ["black", "alluvial", "red", "clay"], "water": "medium",
+        "name": { "en": "Rabi onion", "hi": "रबी प्याज़", "mr": "रब्बी कांदा" },
+        "why": { "en": "Rabi onion stores well for months, so you can sell when prices are better.", "hi": "रबी प्याज़ महीनों तक टिकता है, इसलिए अच्छे भाव पर बेच सकते हैं।", "mr": "रब्बी कांदा महिनोन्महिने टिकतो, त्यामुळे चांगल्या भावाला विकता येतो." },
+        "timeline": [
+          { "title": { "en": "Nursery", "hi": "नर्सरी", "mr": "रोपवाटिका" }, "tasks": [{ "en": "Raise seedlings on raised beds", "hi": "उठी क्यारियों पर पौध तैयार करें", "mr": "गादीवाफ्यावर रोपे तयार करा" }, { "en": "Treat seed with Trichoderma", "hi": "बीज को ट्राइकोडर्मा से उपचारित करें", "mr": "बियाण्याला ट्रायकोडर्मा लावा" }] },
+          { "title": { "en": "Field prep", "hi": "खेत की तैयारी", "mr": "शेत तयारी" }, "tasks": [{ "en": "Plough and add well-rotted compost", "hi": "जुताई करें और सड़ी हुई खाद डालें", "mr": "नांगरणी करा आणि कुजलेले शेणखत टाका" }] },
+          { "title": { "en": "Transplant", "hi": "रोपाई", "mr": "पुनर्लागवड" }, "tasks": [{ "en": "Transplant 6-week seedlings, 15 × 10 cm", "hi": "6 हफ्ते की पौध 15 × 10 सेमी पर रोपें", "mr": "6 आठवड्यांची रोपे 15 × 10 सेमी अंतरावर लावा" }, { "en": "Light irrigation the same day", "hi": "उसी दिन हल्की सिंचाई", "mr": "त्याच दिवशी हलके पाणी" }] },
+          { "title": { "en": "Weeding + first dose", "hi": "निराई + पहली खाद", "mr": "खुरपणी + पहिला हप्ता" }, "tasks": [{ "en": "Weed at 3 weeks", "hi": "3 हफ्ते पर निराई", "mr": "3 आठवड्यांनी खुरपणी" }, { "en": "Top-dress nitrogen", "hi": "नाइट्रोजन की ऊपरी खाद", "mr": "नत्राचा वरखत" }] },
+          { "title": { "en": "Watch for thrips & blotch", "hi": "थ्रिप्स और धब्बे पर नज़र", "mr": "फुलकिडे व करप्यावर लक्ष" }, "tasks": [{ "en": "Scout twice a week", "hi": "हफ्ते में दो बार जाँचें", "mr": "आठवड्यातून दोनदा पहाणी" }] },
+          { "title": { "en": "Harvest", "hi": "कटाई", "mr": "काढणी" }, "tasks": [{ "en": "Stop irrigation 2 weeks before", "hi": "2 हफ्ते पहले सिंचाई बंद करें", "mr": "2 आठवडे आधी पाणी बंद करा" }, { "en": "Cure in shade 10 days before storing", "hi": "भंडारण से पहले 10 दिन छाँव में सुखाएँ", "mr": "साठवणीपूर्वी 10 दिवस सावलीत सुकवा" }] }
+        ]
+      },
+      {
+        "crop": "wheat", "base": "medium", "from": "11-01", "to": "11-30", "durationDays": 110,
+        "soils": ["black", "alluvial", "clay"], "water": "high",
+        "name": { "en": "Wheat", "hi": "गेहूँ", "mr": "गहू" },
+        "why": { "en": "Good if you have assured water for 5–6 irrigations.", "hi": "5–6 सिंचाई का पक्का पानी हो तो अच्छा।", "mr": "5–6 पाळ्यांचे खात्रीचे पाणी असल्यास चांगले." },
+        "timeline": [
+          { "title": { "en": "Sowing", "hi": "बुवाई", "mr": "पेरणी" }, "tasks": [{ "en": "Sow 40 kg seed per acre", "hi": "प्रति एकड़ 40 किलो बीज", "mr": "एकरी 40 किलो बियाणे" }] },
+          { "title": { "en": "Crown root irrigation", "hi": "शीर्ष जड़ सिंचाई", "mr": "मुकुटमूळ पाणी" }, "tasks": [{ "en": "First irrigation at 21 days", "hi": "21 दिन पर पहली सिंचाई", "mr": "21 दिवसांनी पहिले पाणी" }] },
+          { "title": { "en": "Harvest", "hi": "कटाई", "mr": "काढणी" }, "tasks": [{ "en": "Harvest when grains are hard", "hi": "दाने सख्त होने पर कटाई", "mr": "दाणे टणक झाल्यावर काढणी" }] }
+        ]
+      },
+      {
+        "crop": "gram", "base": "high", "from": "10-15", "to": "11-15", "durationDays": 100,
+        "soils": ["black", "alluvial", "clay", "red"], "water": "low",
+        "name": { "en": "Gram (chana)", "hi": "चना", "mr": "हरभरा" },
+        "why": { "en": "Needs little water and fixes nitrogen for your next crop.", "hi": "कम पानी चाहिए और अगली फसल के लिए नाइट्रोजन देता है।", "mr": "कमी पाणी लागते आणि पुढच्या पिकासाठी नत्र स्थिर करतो." },
+        "timeline": [
+          { "title": { "en": "Sowing", "hi": "बुवाई", "mr": "पेरणी" }, "tasks": [{ "en": "Treat seed with Rhizobium", "hi": "बीज को राइज़ोबियम से उपचारित करें", "mr": "बियाण्याला रायझोबियम लावा" }] },
+          { "title": { "en": "Nipping", "hi": "खुंटाई", "mr": "शेंडे खुडणे" }, "tasks": [{ "en": "Nip tips at 30 days for more branches", "hi": "30 दिन पर सिरे तोड़ें", "mr": "30 दिवसांनी शेंडे खुडा" }] },
+          { "title": { "en": "Pod borer watch", "hi": "फली छेदक पर नज़र", "mr": "घाटेअळीवर लक्ष" }, "tasks": [{ "en": "Put up bird perches", "hi": "पक्षियों के बैठने के ठिकाने लगाएँ", "mr": "पक्षी थांबे लावा" }] }
+        ]
+      }
+    ],
+    "kharif": [
+      {
+        "crop": "soybean", "base": "high", "from": "06-15", "to": "07-10", "durationDays": 100,
+        "soils": ["black", "clay", "alluvial"], "water": "low",
+        "name": { "en": "Soybean", "hi": "सोयाबीन", "mr": "सोयाबीन" },
+        "why": { "en": "Sow after 75–100 mm of monsoon rain on black soil.", "hi": "काली मिट्टी पर 75–100 मिमी बारिश के बाद बोएँ।", "mr": "काळ्या मातीत 75–100 मिमी पावसानंतर पेरा." },
+        "timeline": [
+          { "title": { "en": "Sowing", "hi": "बुवाई", "mr": "पेरणी" }, "tasks": [{ "en": "Broad bed furrow sowing", "hi": "चौड़ी क्यारी नाली विधि", "mr": "रुंद वरंबा सरी पद्धत" }] },
+          { "title": { "en": "Weeding", "hi": "निराई", "mr": "खुरपणी" }, "tasks": [{ "en": "Weed at 20 and 40 days", "hi": "20 और 40 दिन पर निराई", "mr": "20 व 40 दिवसांनी खुरपणी" }] },
+          { "title": { "en": "Harvest", "hi": "कटाई", "mr": "काढणी" }, "tasks": [{ "en": "Harvest when 95% pods turn brown", "hi": "95% फलियाँ भूरी होने पर", "mr": "95% शेंगा तपकिरी झाल्यावर" }] }
+        ]
+      },
+      {
+        "crop": "tomato", "base": "medium", "from": "06-20", "to": "07-31", "durationDays": 130,
+        "soils": ["black", "red", "alluvial", "laterite"], "water": "medium",
+        "name": { "en": "Tomato", "hi": "टमाटर", "mr": "टोमॅटो" },
+        "why": { "en": "Sells well in nearby markets; needs staking and good drainage.", "hi": "पास के बाज़ारों में अच्छा बिकता है; सहारा और अच्छी निकासी चाहिए।", "mr": "जवळच्या बाजारात चांगला विकतो; आधार आणि चांगला निचरा लागतो." },
+        "timeline": [
+          { "title": { "en": "Nursery", "hi": "नर्सरी", "mr": "रोपवाटिका" }, "tasks": [{ "en": "Raise seedlings under net", "hi": "जाली के नीचे पौध", "mr": "जाळीखाली रोपे" }] },
+          { "title": { "en": "Staking", "hi": "सहारा", "mr": "आधार देणे" }, "tasks": [{ "en": "Stake at 3 weeks", "hi": "3 हफ्ते पर सहारा", "mr": "3 आठवड्यांनी आधार" }] }
+        ]
+      }
+    ],
+    "zaid": [
+      {
+        "crop": "watermelon", "base": "medium", "from": "01-15", "to": "02-28", "durationDays": 85,
+        "soils": ["sandy", "alluvial", "red", "black"], "water": "high",
+        "name": { "en": "Watermelon", "hi": "तरबूज़", "mr": "कलिंगड" },
+        "why": { "en": "Drip makes a summer crop possible; sells well in April.", "hi": "ड्रिप से गर्मी की फसल संभव; अप्रैल में अच्छा बिकता है।", "mr": "ठिबकमुळे उन्हाळी पीक शक्य; एप्रिलमध्ये चांगले विकते." },
+        "timeline": [
+          { "title": { "en": "Sowing", "hi": "बुवाई", "mr": "पेरणी" }, "tasks": [{ "en": "Sow on mulched beds", "hi": "मल्च वाली क्यारियों पर बोएँ", "mr": "आच्छादन केलेल्या वाफ्यांवर लावा" }] },
+          { "title": { "en": "Flowering", "hi": "फूल", "mr": "फुलोरा" }, "tasks": [{ "en": "Keep bee boxes nearby", "hi": "पास में मधुमक्खी पेटी रखें", "mr": "जवळ मधमाशी पेट्या ठेवा" }] }
+        ]
+      }
+    ]
+  }
+}

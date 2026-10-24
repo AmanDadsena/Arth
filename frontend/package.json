@@ -12,6 +12,7 @@
   "dependencies": {
     "@tanstack/react-query": "^5.104.5",
     "browser-image-compression": "^2.0.2",
+    "firebase": "^12.19.0",
     "i18next": "^26.5.10",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
