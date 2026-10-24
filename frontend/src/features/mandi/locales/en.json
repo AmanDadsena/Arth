@@ -1,0 +1,70 @@
+{
+  "title": "Mandi prices",
+  "subtitle": "Markets near {{place}}",
+  "tabs": { "label": "Mandi sections", "prices": "Prices", "sell": "Sell Smart" },
+  "pickCrop": "Crop",
+  "bestToday": "Best price today",
+  "perQuintal": "per quintal",
+  "asOf": "As of {{date}}",
+  "change": {
+    "up": "Up <n>{{pct}}%</n> this week",
+    "down": "Down <n>{{pct}}%</n> this week",
+    "flat": "Steady this week"
+  },
+  "markets": "Nearby markets",
+  "highest": "Highest",
+  "nearest": "Nearest",
+  "lowHigh": "Low–high",
+  "modalNote": "Price = modal rate, the rate most lots sold at. ₹ per quintal.",
+  "trend": {
+    "title": "30-day trend",
+    "market": "Modal price at {{market}}",
+    "low": "30-day low",
+    "high": "30-day high",
+    "aria": "Price trend for the last 30 days at {{market}}, from {{from}} to {{to}}"
+  },
+  "goSell": {
+    "title": "Where should I sell?",
+    "body": "Compare markets after truck cost.",
+    "cta": "Open Sell Smart"
+  },
+  "empty": {
+    "title": "No prices yet",
+    "body": "No nearby market has reported {{crop}} today. Try another crop or check again later."
+  },
+  "error": { "prices": "Couldn't load prices" },
+  "escalate": {
+    "prices": "Kisan Call Centre can tell you today's rates in your area.",
+    "advice": "We couldn't work out a safe answer. A Kisan Call Centre expert can help you decide where and when to sell."
+  },
+  "sell": {
+    "intro": "How much do you want to sell?",
+    "help": "We compare nearby markets after transport cost.",
+    "quantityLabel": "Quantity",
+    "quick": "Quick amounts",
+    "invalid": "Enter how many quintals, up to 10,000.",
+    "submit": "Get selling advice",
+    "submitting": "Checking markets…",
+    "ourAdvice": "Our advice",
+    "SELL_NOW": "Sell now",
+    "WAIT": "Wait a few days",
+    "bestMarket": "Best market: {{market}}",
+    "netNow": "You get, after transport",
+    "netToday": "If you sell today, after transport",
+    "forQty": "for <n>{{qty}}</n> quintal {{crop}}",
+    "slopeUp": "Price rising about <n>{{amount}}</n> per quintal a day",
+    "slopeDown": "Price falling about <n>{{amount}}</n> per quintal a day",
+    "slopeFlat": "Price steady this week",
+    "listen": "Listen",
+    "stop": "Stop",
+    "why": "Why this advice",
+    "compare": "Compare markets",
+    "best": "Best",
+    "price": "Price",
+    "transport": "Transport",
+    "net": "You get",
+    "errorTitle": "Couldn't get advice",
+    "noOptionsTitle": "No market to compare",
+    "noOptionsBody": "No nearby market is buying {{crop}} right now."
+  }
+}
