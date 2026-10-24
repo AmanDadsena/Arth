@@ -2,3 +2,4 @@ export { useVoice, isVoiceSupported, MAX_RECORDING_MS, type VoiceState, type Use
 export { MicButton, screenFromPath } from './MicButton'
 export { SpeakButton } from './SpeakButton'
 export { speak, stopSpeaking, isSpeechSupported, useSpeakingKey, speechKey } from './speech'
+export { useReadAloudPref, useReadAloudOnce, setReadAloud, sentences } from './readAloud'

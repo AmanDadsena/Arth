@@ -6,6 +6,7 @@ import { fmtDate, useLang } from '@/i18n'
 import { addDays } from './season'
 import { SUIT_TONE, WindowBadge } from './CropCard'
 import { WhyNowSection, hasWhyNow } from './WhyNow'
+import { SpeakButton, sentences } from '@/components/voice'
 
 /** One crop's week-by-week plan: a vertical timeline of dots on a line. */
 export function CropPlan({ rec, onBack }: { rec: CropRecommendation; onBack: () => void }) {
@@ -54,6 +55,19 @@ export function CropPlan({ rec, onBack }: { rec: CropRecommendation; onBack: () 
           </span>
         </div>
         <p className="mt-3 border-t border-hair pt-3 text-[15px] leading-snug text-ink-2">{rec.why}</p>
+        <div className="mt-3 flex justify-end">
+          <SpeakButton
+            text={sentences(
+              rec.name,
+              `${t('sowing')}: ${fmtDate(rec.sowingWindow.from, lang)} – ${fmtDate(rec.sowingWindow.to, lang)}`,
+              t('duration', { days: rec.durationDays }),
+              t('harvestBy', { date: fmtDate(harvest, lang) }),
+              rec.why,
+              ...(rec.whyNow ? [...rec.whyNow.weather, ...rec.whyNow.market] : []),
+              ...weeks.map((w) => `${w.title}: ${w.tasks.join(', ')}`),
+            )}
+          />
+        </div>
       </Card>
 
       <WhyNowSection whyNow={rec.whyNow} />

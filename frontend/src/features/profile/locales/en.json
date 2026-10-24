@@ -106,7 +106,9 @@
     "priceSub": "When {{crops}} prices move",
     "priceSubNone": "When mandi prices move",
     "schemes": "Scheme deadlines",
-    "schemesSub": "Last dates to apply"
+    "schemesSub": "Last dates to apply",
+    "readAloud": "Read answers aloud",
+    "readAloudSub": "Speak the dose, diagnosis or letter as soon as it is ready"
   },
   "help": {
     "title": "Help & support",
