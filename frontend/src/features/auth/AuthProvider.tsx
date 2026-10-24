@@ -104,6 +104,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     qc.clear()
     clearLocal()
     setStatus('signedOut')
+    if (env.firebase) {
+      // Full reload, not a client-side route change: clearLocal() also removes the storage
+      // the live Firebase SDK uses for sign-in, and signing in again in the same page then
+      // fails with auth/internal-error. A fresh page also drops the last user's data from memory.
+      window.location.replace('/login')
+      return
+    }
     nav('/login', { replace: true })
   }, [qc, nav])
 
