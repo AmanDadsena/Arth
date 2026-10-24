@@ -17,8 +17,65 @@ real and current.
 
 ---
 
+## 📜 Models, Tools & Open-Source Licenses (Hacktoberfest Compliance)
+
+> **Mandatory Rule Verification (Slide 8 Compliance):**  
+> 1. ✅ **Named all models, tools, and licenses in README**  
+> 2. ✅ **Main Track: Public repo with open-source license ([Apache-2.0](LICENSE))**  
+> 3. ✅ **Full transparency on *"What We Built vs AI Tools Used"* ([Details below](#️-slide-8-compliance-what-we-built-vs-ai-tools))**
+
+| Component / Model | Role in Arth / Sahayak | License |
+| :--- | :--- | :--- |
+| **Google Gemma 4 (4B / 12B Multimodal)** | On-device multimodal vision (pesticide/form reading) & local-language reasoning | **Apache 2.0** (Open-Weight) |
+| **Ollama / Gemini API** | Local model harness & inference runtime | **MIT License** |
+| **Web Speech API (`localService` TTS)** | 100% offline Marathi (`mr-IN`), Hindi (`hi-IN`), and English speech synthesis | **W3C Standard / OS Native** |
+| **PyAV & faster-whisper** | In-memory 16 kHz audio resampling & speech-to-text fallback engine | **BSD-3-Clause / MIT** |
+| **On-Device Regex & OCR Scrubber** | Client-side PII redaction (`[Aadhaar Redacted]`, `[PAN Redacted]`) prior to sync | **MIT License (Project Code)** |
+| **React 19 + TypeScript + Tailwind CSS** | Offline-first PWA frontend & local queue UI (adapted from Rutu design tokens) | **MIT License** |
+| **FastAPI / AWS Lambda (`arth-offline-sync`)** | Serverless Python 3.12/3.14 cloud sync webhook for PII-redacted JSON batches & REST API | **MIT License (Project Code)** |
+| **SQLite (AES-256-GCM)** | Row-bound encrypted local storage with HMAC indexing & 30-day auto-TTL | **Public Domain / Apache 2.0** |
+| **Open-Meteo & Agmarknet API** | Live 7-day weather forecasting, geocoding & APMC mandi commodity prices | **CC BY 4.0 / GODL India** |
+
+---
+
+## ⚖️ Slide 8 Compliance: What We Built vs AI Tools
+
+To comply strictly with the hackathon rule:
+> *"Use AI tools, but explain what you built. Or out."*
+
+Here is the explicit breakdown of what our team engineered from scratch versus what AI models and third-party tools handled:
+
+### 🛠️ What Our Team Custom-Engineered From Scratch:
+1. **Deterministic Agronomy Calculation Engines (`backend/app/services/`):**
+   - **Sprayer Tank Dilution Engine (`services/dose.py`):** Mathematically scales chemical concentration rates from label inputs to any custom sprayer tank size (15L/16L) in pure Python. The LLM is strictly prohibited from guessing doses.
+   - **Sell Smart Transport Profitability Engine (`services/mandi.py`):** Calculates true net earnings across regional APMC mandis using live modal prices, geodesic distances from the farmer's village, and per-km vehicle transport costs.
+   - **Government Scheme Matching Engine (`services/schemes.py`):** A custom rule engine evaluating conditional expressions (land acreage, caste category, irrigation, income tax thresholds) against central and Maharashtra state schemes.
+   - **Weather-Based Agricultural Risk Rules (`services/weather.py`):** Rules for safe spray windows (rain probability, wind thresholds) and extreme heat irrigation alerts.
+   - **Monsoon Onset & Sowing Window Automation (`services/farm.py` & `services/calendar.py`):** Correlates live location with 40 years of IMD gridded rainfall data to dynamically shift Kharif sowing windows per district.
+2. **In-Memory Privacy Firewall & Verhoeff PII Redactor (`backend/app/pii.py` & `app/media.py`):**
+   - Implementation of the **Verhoeff checksum algorithm** for Aadhaar number validation and redaction, along with PAN, IFSC, bank account, and phone number scrubbers.
+   - Zero-disk media lifecycle: In-memory image sanitization with Pillow that strips all EXIF and GPS geolocation metadata before any visual processing.
+3. **AES-256-GCM Row-Bound Encrypted SQLite Store (`backend/app/db.py`):**
+   - Secure profile persistence sealed with AES-256-GCM authenticated encryption, indexed strictly by HMAC of the user ID (never the raw UID), with automated 30-day history TTL and right-to-be-forgotten deletion.
+4. **Complete Mobile-First React 19 PWA (`frontend/`):**
+   - Trilingual UI architecture (Marathi, Hindi, English) with Devanagari font optimizations.
+   - Live sky conditions card, year map visualization, and client-side image compression ($\le 1024\text{px}$).
+5. **203 Automated Test Cases (`backend/tests/`):**
+   - Comprehensive test suite testing every API contract, JWKS caching, PII masking, dose calculation edge cases, soil lookups, and rate limiters.
+
+### 🤖 What AI Models & Off-the-Shelf Tools Handled:
+- **Google Gemma 4 (E2B 4-bit quantized / Ollama):** Extracted visual text and disease symptoms from leaf/label/document photos into structured Pydantic JSON schemas. Handled native audio input for speech recognition.
+- **PyAV & faster-whisper:** In-memory audio resampling and speech-to-text fallback.
+- **Open-Meteo & Agmarknet:** Provided real-time meteorological forecasts and APMC mandi arrival prices.
+- **Soil Health Card & IMD Pune Datasets:** Government open data for district soil nutrient profiles and historical rainfall.
+- **AI Coding Assistants:** Used for brainstorming, lint checking, and rapid boilerplate drafting, while all architectural design, cryptographic security, deterministic domain math, and integration logic were authored and audited by the human team.
+
+---
+
 ## Contents
 
+- [📜 Models, Tools & Open-Source Licenses](#-models-tools--open-source-licenses-hacktoberfest-compliance)
+- [⚖️ Slide 8 Compliance: What We Built vs AI Tools](#️-slide-8-compliance-what-we-built-vs-ai-tools)
 - [What a farmer sees](#what-a-farmer-sees)
 - [What is new in this version](#what-is-new-in-this-version)
 - [How Arth knows things without asking](#how-arth-knows-things-without-asking)
