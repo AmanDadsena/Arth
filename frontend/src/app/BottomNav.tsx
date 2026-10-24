@@ -3,11 +3,11 @@ import { useTranslation } from 'react-i18next'
 import { Icon, type IconName } from '@/components/ui'
 
 /**
- * A warm white bar floating over the screen. Every tab keeps its icon and a
- * short label (many of our farmers read little, so icons alone are not enough);
- * the active one sits on a soft green pill that slides between tabs. With
- * `withMic` the right end is kept free for the voice button, which Layout
- * places there (see MicSlot) so it rises out of the bar with its own label.
+ * A white pill floating over the screen. Every tab keeps its icon and a short
+ * label (many of our farmers read little, so icons alone are not enough); the
+ * active icon sits on a green pill that slides between tabs. With `withMic`
+ * the bar stops short so the voice button (placed by Layout, see MicSlot) gets
+ * its own green circle beside it.
  */
 
 const TABS: { key: string; path: string; icon: IconName }[] = [
@@ -36,7 +36,7 @@ export function BottomNav({ withMic = false }: { withMic?: boolean }) {
   return (
     <>
       <div aria-hidden className="arth-nav-scrim" />
-      <nav aria-label={t('main', { defaultValue: 'Main' })} className="arth-nav">
+      <nav aria-label={t('main', { defaultValue: 'Main' })} className="arth-nav" data-mic={withMic || undefined}>
         <div className="arth-nav-tabs">
           {activeIndex >= 0 ? (
             <span aria-hidden className="arth-nav-thumb" style={{ transform: `translateX(${activeIndex * 100}%)` }}>
@@ -64,11 +64,6 @@ export function BottomNav({ withMic = false }: { withMic?: boolean }) {
             )
           })}
         </div>
-        {withMic ? (
-          <div aria-hidden className="arth-nav-micslot">
-            <span className="arth-nav-label arth-nav-miclabel">{t('speak', { defaultValue: t('mic') })}</span>
-          </div>
-        ) : null}
       </nav>
     </>
   )
