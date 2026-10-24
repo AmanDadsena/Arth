@@ -1,381 +1,319 @@
 # Arth — अर्थ
 
-> **Daily farming decisions for smallholder farmers in Maharashtra — in Marathi, Hindi, and English.**
+> **"What should I do on my farm today?" — answered every morning, for smallholder farmers in Maharashtra, in Marathi, Hindi and English.**
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![React](https://img.shields.io/badge/React-19-61dafb.svg?logo=react&logoColor=black)](frontend/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Strict-blue.svg?logo=typescript&logoColor=white)](frontend/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg?logo=fastapi&logoColor=white)](backend/)
-[![Python](https://img.shields.io/badge/Python-3.11%2B-3776ab.svg?logo=python&logoColor=white)](backend/)
-[![Ollama Gemma 4](https://img.shields.io/badge/AI-Gemma_4_E2B-orange.svg)](https://ollama.com)
-[![Tests](https://img.shields.io/badge/Tests-176%20passing-brightgreen.svg)](backend/tests/)
-[![Privacy](https://img.shields.io/badge/Privacy-Zero_Disk_Media_%7C_AES--256--GCM-success.svg)](#privacy--security-by-design)
+[![Gemma 4](https://img.shields.io/badge/AI-Gemma_4_E2B-orange.svg)](https://ollama.com)
+[![Tests](https://img.shields.io/badge/Tests-203%20passing-brightgreen.svg)](backend/tests/)
+[![Data](https://img.shields.io/badge/Data-Live_%26_Real-success.svg)](#real-data-no-sample-data)
+
+Arth turns live weather, live mandi prices, 40 years of IMD rainfall and 9 lakh+ Soil Health
+Card tests into two or three jobs for today, on a cheap phone, in the farmer's own language.
+There is no demo mode and no sample data: you sign in with Google and everything you see is
+real and current.
 
 ---
 
-## Table of Contents
+## Contents
 
-- [Why Arth? (The Human Context)](#why-arth-the-human-context)
-- [Core Safety Principle](#core-safety-principle)
-- [Architecture Flow](#architecture-flow)
-  - [1. High-Level Conceptual Flow (For Everyone)](#1-high-level-conceptual-flow-for-everyone)
-  - [2. End-to-End Technical Pipeline](#2-end-to-end-technical-pipeline)
-  - [3. Walkthrough of Real User Scenarios](#3-walkthrough-of-real-user-scenarios)
-- [Core Features](#core-features)
-- [Privacy & Security by Design](#privacy--security-by-design)
-- [Repository Layout](#repository-layout)
-- [Quickstart Guide](#quickstart-guide)
-  - [Option A: Instant Offline Demo Mode (Zero Setup)](#option-a-instant-offline-demo-mode-zero-setup)
-  - [Option B: Full-Stack Local Environment (FastAPI + Ollama Gemma 4)](#option-b-full-stack-local-environment-fastapi--ollama-gemma-4)
-- [Testing & Quality Assurance](#testing--quality-assurance)
-- [Data Sources & Acknowledgements](#data-sources--acknowledgements)
+- [What a farmer sees](#what-a-farmer-sees)
+- [What is new in this version](#what-is-new-in-this-version)
+- [How Arth knows things without asking](#how-arth-knows-things-without-asking)
+- [The safety rule](#the-safety-rule)
+- [Architecture](#architecture)
+- [Real data, no sample data](#real-data-no-sample-data)
+- [Run it locally](#run-it-locally)
+- [API](#api)
+- [Repository layout](#repository-layout)
+- [Privacy and security](#privacy-and-security)
+- [Testing](#testing)
+- [Data sources and credits](#data-sources-and-credits)
 - [License](#license)
 
 ---
 
-## Why Arth? (The Human Context)
+## What a farmer sees
 
-Meet **Ramesh** — a farmer cultivating 2.5 acres in Niphad, Nashik growing grapes and onions.
-
-Every morning, Ramesh faces critical agricultural decisions where mistakes cost weeks of income:
-- **"Should I spray pesticide today?"**  
-  *Without Arth:* He looks at the morning clouds and sprays; unexpected afternoon rain washes away ₹5,000 of pesticide and pollutes the ground.  
-  *With Arth:* **Aaj Ka Kaam** checks 7-day weather forecasts and wind speeds, giving a clear advisory: *"Do not spray tomorrow — 80% rain predicted"*.
-- **"What is this white spot on my grape leaves?"**  
-  *Without Arth:* He travels to an agro-dealer in town who sells him an expensive, unneeded chemical.  
-  *With Arth:* **Crop Doctor** photographs the leaf, diagnoses the disease (*Alternaria porri / Downy mildew*), and prescribes organic and chemical remedies. If uncertain, it directly connects him to the **Kisan Call Centre (1800-180-1551)**.
-- **"How much pesticide do I mix in my 15-litre sprayer pump?"**  
-  *Without Arth:* The bottle says *"mix 250 ml/acre in 200 L water"*. Mental math errors either burn the crop or fail to kill the pest.  
-  *With Arth:* **Label Reader** extracts active ingredients, and a deterministic Python engine calculates the exact dosage for his 15-litre tank. **It never guesses.**
-- **"Which mandi should I take my onions to?"**  
-  *Without Arth:* He sells at the nearest market, losing profit to middlemen.  
-  *With Arth:* **Sell Smart** calculates net earnings across all nearby APMCs after deducting vehicle transport costs:  
-  $$\text{Net Earnings} = (\text{Modal Price} \times \text{Quantity}) - (\text{Distance in km} \times \text{Transport Cost per km})$$
-- **"What does this official government or bank notice say?"**  
-  *Without Arth:* Dense legal jargon in English or formal script creates anxiety and causes missed subsidy deadlines.  
-  *With Arth:* **Kagaz Samjho** redacts Aadhaar, PAN, and bank account numbers, providing an instant plain-language summary with deadlines and action items in Marathi or Hindi.
+| Screen | What it does | Where the answer comes from |
+| :--- | :--- | :--- |
+| **Sign in** | A dawn landing page: what Arth does, in five lines, then **Sign in with Google** (the only way in). | Firebase Auth |
+| **Home — Aaj Ka Kaam** | The sky right now over the farm, how far into the sowing season we are, the **one most important job today** in big type, where each of the farmer's crops usually stands today, 4-day weather, price moves. One button reads it all aloud. | Open-Meteo, Agmarknet, crop-stage calendar |
+| **Crop calendar** | A **year map** of the farm (seasons, each crop's stages, the monsoon, a line at today), what is in the field now, which crops can be sown **today** (with days left) and which open soon. | Today's date, IMD monsoon onset per district, Soil Health Card |
+| **Crop Doctor** | Photo of a sick leaf → disease, severity, organic and chemical remedies. Below 60% confidence it says "not sure" and offers the Kisan Call Centre. | Gemma 4 vision |
+| **Label Reader** | Photo of a pesticide label → the dose for *this farmer's* sprayer tank. Never guesses a dose. | Gemma 4 reads; Python calculates |
+| **Mandi & Sell Smart** | Nearby APMC prices, 30-day trend, sell now or wait after transport cost. | data.gov.in Agmarknet, Open-Meteo geocoding |
+| **Kagaz Samjho** | Photo of a government or bank paper → plain-language summary, deadlines, next steps; Aadhaar/PAN/bank numbers hidden first. | PII redaction + Gemma 4 |
+| **Schemes** | One question per screen → PM-Kisan, PMFBY, KCC, PMKSY, MahaDBT and others he qualifies for. | Rules engine |
+| **Voice** | Ask anything by voice from any screen. | Gemma 4 native audio |
+| **Profile** | Who you are, your farm, **your district's soil test results**, shortcuts. | Profile + Soil Health Card |
+| **Settings** | Language, alerts, sprayer tank, soil correction, optional "about you", help, privacy and data, delete account. | — |
 
 ---
 
-## Core Safety Principle
+## What is new in this version
 
-> **"The model reads and explains; Python decides."**
-
-Generative AI models are exceptional at **perception** (reading handwriting, recognizing leaf blights, transcribing rural dialects). However, they can hallucinate numbers. In agriculture, a hallucinated chemical dose or false market rate can devastate a family's livelihood.
-
-Arth enforces strict architectural separation:
-1. **AI Perception Layer (Gemma 4 & faster-whisper):** Responsible *only* for reading labels, recognizing crop symptoms, transcribing voice, and generating friendly explanations.
-2. **Deterministic Domain Engines (Python Logic):** Responsible for all calculations — sprayer tank dosage math, mandi transport profitability, crop calendar matching, and scheme eligibility rules.
-3. **Safety Fallback:** If image confidence is below $0.60$ or the label is blurry, Arth refuses to guess and connects the farmer to the official **Kisan Call Centre (`1800-180-1551`)**.
+1. **No more demo mode.** The "Try demo" button, the mock API (MSW), the sample farmer and the
+   in-browser fake data are gone. Google sign-in is the only way in, and every screen is served by
+   the backend: live weather, live mandi prices, Gemma 4 for photos and voice.
+2. **A new Home.** Built to answer one question at a glance: a live "sky" card (weather now,
+   place, season progress), the single most important job of the day, and a card per crop
+   showing its usual stage today.
+3. **A landing page that explains itself.** The sign-in screen now says, in five lines, what Arth
+   does for a farmer, before asking him to sign in.
+4. **A calmer Profile, and a real Settings screen.** Profile keeps farm, soil and tools. Language,
+   alerts, sprayer tank, optional questions, help, privacy and "about" moved to **Settings**.
+5. **Soil is never asked** (the way Project Rutu does it). From the farm's location Arth finds
+   the district, its dominant soil type and its **Soil Health Card** results. Onboarding went
+   from 14 questions to **6** (language, name, place, crops, land, water).
+6. **The calendar runs on today's date.** It knows the season, what each of the farmer's crops
+   is usually doing this week, which sowing windows are open now and how many days are left,
+   and it moves **kharif** windows to the district's own **monsoon onset** from 40 years of IMD
+   rainfall. "Why now" lines come from the live forecast, live prices and district soil data.
 
 ---
 
-## Architecture Flow
-
-### 1. High-Level Conceptual Flow (For Everyone)
+## How Arth knows things without asking
 
 ```
-[ 🧑‍🌾 Farmer (Phone / Voice / Camera) ]
-                  │
-                  ▼
-[ 📱 Arth Mobile PWA (Marathi · Hindi · English) ]
-                  │
-                  ▼
-[ 🛡️ Privacy Firewall (In-Memory EXIF Strip & Verhoeff Aadhaar Redaction) ]
-                  │
-        ┌─────────┴─────────┐
-        ▼                   ▼
-[ 🧠 AI Vision & STT ]  [ ⚙️ Python Math Engines ]
-  (Gemma 4 & Whisper)     (Dose, Mandi Net, Schemes)
-        │                   │
-        └─────────┬─────────┘
-                  ▼
-[ ✅ Safe, Verified Advice + Kisan Call Centre (1800-180-1551) Fallback ]
+ phone location (rounded to ~1 km)  ──►  nearest of 36 Maharashtra districts
+                                              │
+          ┌───────────────────────────────────┼─────────────────────────────────┐
+          ▼                                   ▼                                 ▼
+  dominant soil type              Soil Health Card results            monsoon onset (IMD 1985–2025)
+  (black / red / laterite /       share of tested fields low in       Theil–Sen trend + Mann–Kendall
+   alluvial)                      N, P, K, organic carbon, S, Zn…     significance, per district
+          │                                   │                                 │
+          ▼                                   ▼                                 ▼
+  crop suitability                "74% of fields in Nashik are        kharif sowing windows move with
+                                   low in nitrogen — grow gram"        this district's rain
 ```
+
+- **District data** lives in [`backend/app/data/districts.json`](backend/app/data/districts.json),
+  built by [`backend/scripts/build_districts.py`](backend/scripts/build_districts.py) from the
+  Rutu data pipeline (IMD gridded rainfall; Soil Health Card Nutrient Dashboard).
+- **Crop stages through the year** (nursery, transplanting, protection, harvest, rest) for onion,
+  soybean, cotton, grapes, pomegranate, sugarcane, wheat, gram, maize, tomato, potato and
+  watermelon live in [`backend/app/data/crop_stages.json`](backend/app/data/crop_stages.json).
+  Arth says **"usually"**: these are the common Maharashtra calendars, not a reading of one field.
+- Soil is the **district's odds**, not the farmer's field, and the app says so and points to a
+  free Soil Health Card test. A farmer can correct his soil type in Settings; it is then kept.
 
 ---
 
-### 2. End-to-End Technical Pipeline
+## The safety rule
+
+> **The model reads and explains; plain, tested code decides.**
+
+Gemma 4 is used for perception — reading a leaf, a label, a document, a voice note — and for
+explaining a result in the farmer's language. Anything that could hurt a farmer if it were wrong
+(a pesticide dose, sell or wait, scheme eligibility, sowing dates, spray advisories) is computed
+by deterministic Python with unit tests. Low confidence or an unreadable label → no guess, only
+the **Kisan Call Centre, 1800-180-1551**.
+
+---
+
+## Architecture
 
 ```mermaid
 flowchart TD
-    subgraph Client["📱 Frontend (Mobile PWA - React 19 + TypeScript)"]
-        UI["User Interface (Marathi · Hindi · English)"]
-        CamMic["Camera & Microphone Intake"]
-        Comp["Client-side Image Compression (≤ 1024px)"]
-        DemoMSW["Offline Demo Resolver (MSW Mock Data)"]
-        AuthClient["Auth Seam (Firebase Google Sign-In / Dev Mode)"]
-        
-        UI --> CamMic
-        CamMic --> Comp
+    subgraph Phone["📱 PWA — React 19 + TypeScript + Tailwind v4"]
+        UI["Screens in मराठी · हिंदी · English"]
+        Auth["Google sign-in (Firebase Auth)"]
+        Cam["Camera / mic, image compressed to ≤1024 px"]
     end
 
-    subgraph Gateway["🛡️ Gateway & Middleware (FastAPI)"]
-        Proxy["Vite Dev Proxy / Reverse Proxy (/api)"]
-        SecHeaders["Security Headers (CSP, nosniff, DENY)"]
-        RateLimiter["Token-Bucket Rate Limiter (10 rps / 20 burst)"]
-        JWTVerify["JWT Authorizer (Firebase RS256 Google JWKS)"]
-        
-        Comp -.->|HTTPS Request| Proxy
-        Proxy --> SecHeaders
-        SecHeaders --> RateLimiter
-        RateLimiter --> JWTVerify
+    subgraph API["🛡️ FastAPI backend"]
+        MW["Security headers · rate limit · Firebase JWT check"]
+        Farm["Farm context: district → soil, Soil Health Card, monsoon onset"]
+        Cal["Calendar: today's season, open windows, crop stages, why-now"]
+        Brief["Aaj Ka Kaam: weather + prices + crop stages → 2–3 jobs"]
+        Rules["Dose math · Sell Smart · Scheme rules · Spray advisories"]
+        PII["In-memory media + PII redaction (Aadhaar, PAN, bank, phone)"]
+        AI["Gemma 4 E2B via Ollama: vision, native audio, JSON output"]
     end
 
-    subgraph PrivacyLayer["🔒 In-Memory Sanitization (Zero Disk Storage)"]
-        MediaSniffer["Media Sniffer & Bomb Guard"]
-        EXIFStrip["Pillow In-Memory Re-encoder (EXIF & GPS Stripped)"]
-        PIIFilter["PII Redaction Engine (Aadhaar Verhoeff, PAN, Bank, Phone)"]
-        
-        JWTVerify --> MediaSniffer
-        MediaSniffer --> EXIFStrip
-        EXIFStrip --> PIIFilter
+    subgraph Data["🌐 Live and real data"]
+        OM["Open-Meteo forecast"]
+        AG["Agmarknet (data.gov.in)"]
+        DS["districts.json — IMD onset + Soil Health Card"]
+        DB[("SQLite, AES-256-GCM sealed profiles")]
     end
 
-    subgraph AI["🧠 Local AI Perception Layer"]
-        AudioDecode["PyAV In-Memory Audio Resampler (16kHz WAV)"]
-        GemmaNativeSTT["Gemma 4 Native Audio STT (~0.5s)"]
-        WhisperFallback["faster-whisper (CPU Fallback)"]
-        OllamaGemma["Ollama · Gemma 4 E2B (Local Vision & LLM)"]
-        SchemaValidator["Strict JSON Schema Enforcer"]
-        
-        PIIFilter --> AudioDecode
-        AudioDecode --> GemmaNativeSTT -.->|Fallback| WhisperFallback
-        GemmaNativeSTT --> PIIFilter
-        PIIFilter --> OllamaGemma
-        OllamaGemma --> SchemaValidator
-    end
-
-    subgraph Engines["⚙️ Deterministic Decision Engines (Python Logic)"]
-        DoseCalc["Dose Calculator (Tank Size Scaling)"]
-        MandiCalc["Sell Smart Engine (Net = Modal Price - Transport)"]
-        SchemeRule["Scheme Matcher (JSON Rule Evaluation)"]
-        WeatherRule["Spray & Heat Advisory Rule Engine"]
-        BriefGen["Aaj Ka Kaam Aggregator"]
-        
-        SchemaValidator --> DoseCalc
-        SchemaValidator --> MandiCalc
-        SchemaValidator --> SchemeRule
-        SchemaValidator --> WeatherRule
-        WeatherRule & MandiCalc & SchemeRule --> BriefGen
-    end
-
-    subgraph Escalation["🚨 Safety Escalation"]
-        ConfidenceCheck{"Confidence ≥ 0.60 & Photo Readable?"}
-        KisanCall["📞 Kisan Call Centre (1800-180-1551)"]
-        
-        SchemaValidator --> ConfidenceCheck
-        ConfidenceCheck -- No / Low Confidence --> KisanCall
-        ConfidenceCheck -- Yes --> Engines
-    end
-
-    subgraph DataStore["💾 Data & External APIs"]
-        EncryptedDB[("SQLite Profile Store (AES-256-GCM sealed)")]
-        OpenMeteo["Open-Meteo API (Weather & Geocoding)"]
-        Agmarknet["data.gov.in Agmarknet API (Mandi Rates)"]
-        
-        Engines <--> EncryptedDB
-        Engines <--> OpenMeteo
-        Engines <--> Agmarknet
-    end
-
-    BriefGen -->|Clean JSON Response| UI
+    UI --> Auth --> MW
+    Cam --> MW
+    MW --> Brief & Cal & Farm & Rules & PII
+    PII --> AI
+    Brief --> OM & AG
+    Cal --> OM & AG & DS
+    Farm --> DS
+    Rules --> AG
+    MW --> DB
 ```
 
 ---
 
-### 3. Walkthrough of Real User Scenarios
+## Real data, no sample data
 
-#### Scenario A: Leaf Disease Diagnosis (`/doctor`)
-1. **Intake:** The farmer takes a photo of a diseased onion leaf.
-2. **Client Compression:** The browser downscales the image to $\le 1024\text{px}$ in memory using `browser-image-compression`.
-3. **Privacy Sanitization:** FastAPI passes raw bytes to Pillow, which strips all EXIF metadata and GPS tags. The image is never written to disk.
-4. **Model Perception:** Gemma 4 Vision detects symptoms (*Alternaria porri / Purple blotch*).
-5. **Confidence Check:** If confidence $\ge 0.60$, it returns the diagnosis with organic and chemical remedies. If $< 0.60$ or blurry, it displays a one-tap call button for the Kisan Call Centre (`1800-180-1551`).
-
-#### Scenario B: Pesticide Label & Sprayer Tank Dosage (`/label`)
-1. **Intake:** The farmer photographs a bottle of *Mancozeb 75% WP*.
-2. **Perception:** Gemma 4 Vision extracts active ingredients, dilution basis (`2.5 g per litre`), and safety guidelines into typed JSON.
-3. **Deterministic Math:** `services/dose.py` multiplies $2.5\text{ g/L} \times 15\text{ L (farmer's tank size)} = 37.5\text{ grams}$.
-4. **Result:** The UI displays **"Add 37.5 g per 15L tank"** along with safety instructions in Marathi/Hindi.
-
-#### Scenario C: Mandi Sell Smart Decision (`/mandi`)
-1. **Live Data:** Fetches today's APMC prices from data.gov.in Agmarknet and calculates distances from the farmer's village via Open-Meteo geocoding.
-2. **Math Engine:** For each market, it calculates:
-   $$\text{Net Earnings} = (\text{Modal Price} \times \text{Quantity}) - (\text{Distance in km} \times \text{Transport Cost per km})$$
-3. **Recommendation:** If local prices are rising and net profits elsewhere are lower due to transport, it recommends **"WAIT"**; otherwise, it highlights the most profitable market and recommends **"SELL NOW"**.
-
-#### Scenario D: Document Explainer with PII Redaction (`/kagaz`)
-1. **Consent Gate:** Requires the farmer's explicit consent before processing.
-2. **Redaction Engine:** Regex and the **Verhoeff algorithm** detect Aadhaar numbers, PAN cards, bank account numbers, and phone numbers.
-3. **Masking:** Replaces sensitive values with `XXXX-XXXX-1234` before Gemma 4 analyzes the text.
-4. **Summary:** Gemma 4 translates official terms into a 3-bullet summary with deadlines and action items in Marathi/Hindi.
-
----
-
-## Core Features
-
-| Feature | What It Does | Technology |
+| What | Source | Freshness |
 | :--- | :--- | :--- |
-| **🌤️ Aaj Ka Kaam** *(Today's Work)* | Daily prioritized morning brief (spray advisories, mandi alerts, work items). | Open-Meteo + Agmarknet + Audio readout |
-| **🌿 Crop Doctor** *(पीक डॉक्टर)* | Leaf disease diagnosis, severity rating, and remedies. | Gemma 4 Vision + Kisan Call Centre escalation |
-| **🧪 Label Reader** *(डोस गणक)* | Exact chemical dose per sprayer pump (15L/16L). | Gemma 4 OCR + Python dosage engine |
-| **📄 Kagaz Samjho** *(कागद समजून घ्या)* | Government/bank notice explainer with PII masking. | Verhoeff PII redactor + Gemma 4 translation |
-| **📈 Mandi & Sell Smart** | Live APMC rates, 30-day trends, and transport-adjusted sell advice. | Agmarknet API + Recharts + Transport formula |
-| **📅 Crop Calendar** | Season-aware cultivation plans (Kharif, Rabi, Zaid). | Regional agronomy rules + Soil/irrigation matching |
-| **🏛️ Scheme Finder** | Wizard matching farmers to PM-Kisan, PMFBY, KCC, MahaDBT. | Rule-based engine + Voice-assisted form fill |
-| **🎙️ Voice Assistant** | Hands-free voice queries in Marathi, Hindi, and English. | Gemma 4 Native Audio / Whisper + Gemma 4 intent routing |
+| Weather, 7-day forecast | [Open-Meteo](https://open-meteo.com) | live, cached 15 min |
+| Mandi prices, 30-day trend | Agmarknet on [data.gov.in](https://data.gov.in) | live, stored daily so the trend builds up |
+| Market locations / distances | Open-Meteo geocoding | live, cached |
+| Monsoon onset per district | IMD Pune gridded daily rainfall, 1985–2025 | built offline (`build_districts.py`) |
+| District soil (N, P, K, OC, S, Zn, B, Fe) | Soil Health Card Nutrient Dashboard | latest completed testing cycle |
+| Crop stages and sowing windows | Maharashtra crop calendars (state department, MPKV, NRC Grapes) | reviewed by hand |
+| Photo, label, document, voice | Gemma 4 E2B, running locally via Ollama | per request, never stored |
 
 ---
 
-## Privacy & Security by Design
+## Run it locally
 
-1. **Zero Storage of Media:** Photos and voice clips are decoded in memory, processed, and discarded. No S3, cloud storage, or local disk persistence is used.
-2. **EXIF & GPS Stripping:** All camera metadata and location coordinates are stripped in RAM before visual processing.
-3. **Verhoeff-Validated PII Redaction:** Complete masking of Aadhaar (with checksum verification), PAN, IFSC, bank accounts, and mobile numbers.
-4. **Encrypted Storage:** Profiles in SQLite are sealed with **AES-256-GCM** (row-bound with associated data). Primary keys use an HMAC hash of the user ID.
-5. **30-Day TTL & Right to be Forgotten:** History records expire automatically after 30 days. Calling `DELETE /farmer/me` wipes all stored data and frontend cache.
-6. **Local AI Execution:** When running Ollama and PyAV/Whisper, all inference occurs locally on your machine with zero third-party cloud data leaks.
+### Prerequisites
+
+- **Node.js** 20+ and npm
+- **Python** 3.11+
+- **[Ollama](https://ollama.com)** with Gemma 4: `ollama pull gemma4:e2b`
+- A **Firebase** project with Google sign-in enabled (free tier is enough)
+- Optional: a free **data.gov.in** API key for mandi prices
+
+### 1. Firebase (Google sign-in)
+
+1. Create a project at <https://console.firebase.google.com>.
+2. **Authentication → Sign-in method → Google → Enable.**
+3. **Authentication → Settings → Authorized domains**: add `localhost` (and your deployed domain).
+4. **Project settings → Your apps → Web app**: copy `apiKey`, `authDomain`, `projectId`, `appId`.
+
+### 2. Backend
+
+```bash
+cd backend
+python -m venv .venv
+.venv\Scripts\activate          # Windows
+# source .venv/bin/activate     # macOS / Linux
+pip install -e ".[dev]"
+cp .env.example .env            # set ARTH_FIREBASE_PROJECT_ID and ARTH_DATA_GOV_IN_API_KEY
+uvicorn app.main:app_factory --factory --port 8000
+```
+
+API docs (development only): <http://localhost:8000/docs>.
+
+### 3. Frontend
+
+```bash
+cd frontend
+npm install
+cp .env.example .env.local      # fill in the four VITE_FIREBASE_* values
+npm run dev
+```
+
+Open <http://localhost:5173>, choose a language and **Sign in with Google**. `npm run dev`
+proxies `/api` to the backend on port 8000, so the browser sees one origin.
+
+### Rebuilding the district data (optional)
+
+```bash
+git clone https://github.com/rushii23-dev/Project-Rutu ../Project-Rutu
+cd backend
+python scripts/build_districts.py ../../Project-Rutu
+```
 
 ---
 
-## Repository Layout
+## API
+
+Full contract: [`docs/SPEC.md`](docs/SPEC.md). Every request carries the Firebase ID token; the
+user ID is taken only from the verified token.
+
+| Method | Path | What it returns |
+| :--- | :--- | :--- |
+| GET / PUT / DELETE | `/farmer/me` | The profile. `soilType` is filled from the district unless the farmer set it (`soilSource: "farmer"`). |
+| GET | `/brief?lang=` | Greeting, place, **weather now**, 4-day weather, 2–3 actions, price alerts, **crops in the field today**, **season progress**. |
+| GET | `/calendar?lang=[&season=]` | Today's season unless another is asked for: **year map spans**, **monsoon onset**, **crops in the field**, recommendations with **open / upcoming status** and **why now**. |
+| GET | `/soil?lang=[&lat=&lon=&district=]` | District soil type and Soil Health Card shares, with plain-language tips. Without a point, for the saved farm. |
+| GET | `/weather?lat=&lon=&lang=` | Current conditions, 7 days, spray / heat / wind advisories. |
+| GET | `/mandi/prices` · POST `/mandi/sell-advice` | Nearby markets, 30-day trend · sell now or wait after transport. |
+| POST | `/ai/crop-doctor` · `/ai/label-reader` · `/ai/explain-document` · `/ai/voice` | Gemma 4 results (multipart). |
+| POST | `/schemes/match` | Schemes with eligibility reasons and documents. |
+
+---
+
+## Repository layout
 
 ```
 Arth/
-├── frontend/                     # Mobile-first React 19 PWA
-│   ├── src/
-│   │   ├── app/                 # Router, layout shell, bottom nav
-│   │   ├── features/            # Feature modules (brief, doctor, label, mandi, kagaz, etc.)
-│   │   ├── components/ui/       # Tactile UI components (Rutu design tokens)
-│   │   ├── lib/                 # API client, session management, Firebase auth
-│   │   ├── mocks/               # MSW mock handlers & Ramesh demo data
-│   │   └── i18n/                # Localization files (en, hi, mr)
-│   ├── public/                  # PWA manifest, service worker assets
-│   ├── README.md                # Frontend documentation
-│   └── package.json
-├── backend/                      # FastAPI Python Service
+├── frontend/                         React 19 PWA
+│   └── src/
+│       ├── app/                      router, layout, bottom nav, mic
+│       ├── features/
+│       │   ├── auth/                 Google sign-in, landing page, consent
+│       │   ├── onboarding/           6 questions, soil found from location
+│       │   ├── brief/                Home: TodayHero, top job, crops today
+│       │   ├── calendar/             YearMap, FieldCropCard, sow-now list, week plans
+│       │   ├── profile/              Profile, SoilCard, SettingsPage and its sections
+│       │   └── doctor/ label/ kagaz/ mandi/ schemes/ weather/
+│       ├── components/               shared UI and voice
+│       ├── lib/                      typed API client, Firebase, session
+│       └── i18n/                     en / hi / mr
+├── backend/
 │   ├── app/
-│   │   ├── main.py              # Application factory, lifespan, CORS, rate limiting
-│   │   ├── auth.py              # Firebase JWT verification & dev auth bypass
-│   │   ├── db.py                # AES-256-GCM encrypted SQLite persistence
-│   │   ├── llm.py               # Ollama Gemma 4 client with JSON schema validation
-│   │   ├── stt.py               # Gemma 4 native audio + PyAV + faster-whisper fallback
-│   │   ├── pii.py               # Verhoeff Aadhaar, PAN, IFSC & phone redactor
-│   │   ├── media.py             # In-memory image sanitization & EXIF stripping
-│   │   └── services/            # Pure Python business rules (dose, mandi, schemes, etc.)
-│   ├── tests/                   # 176 pytest unit and integration tests
-│   ├── README.md                # Detailed backend documentation
-│   └── pyproject.toml
-└── docs/
-    └── SPEC.md                  # Comprehensive API contract, security, and UX specification
+│   │   ├── services/
+│   │   │   ├── farm.py               district → soil, Soil Health Card, monsoon onset
+│   │   │   ├── calendar.py           today's season, windows, stages, why-now
+│   │   │   ├── brief.py              Aaj Ka Kaam
+│   │   │   └── weather.py mandi.py dose.py schemes.py ai.py …
+│   │   └── data/                     districts.json, crop_stages.json, crops.json, schemes.json
+│   ├── scripts/build_districts.py    rebuilds district data
+│   └── tests/                        203 tests, no network or model needed
+└── docs/SPEC.md                      API contract, security and UX rules
 ```
 
 ---
 
-## Quickstart Guide
+## Privacy and security
 
-### Option A: Instant Offline Demo Mode (Zero Setup)
-
-You can run and explore the full UI in offline demo mode without installing Python, Ollama, or external API keys. The demo preloads data for **Ramesh**, an onion and grape farmer from Niphad, Nashik.
-
-```bash
-# 1. Navigate to frontend
-cd frontend
-
-# 2. Install dependencies
-npm install
-
-# 3. Configure environment for mock mode
-cp .env.example .env.local
-# (Ensure VITE_USE_MOCKS=true in .env.local)
-
-# 4. Start Vite development server
-npm run dev
-```
-
-Open `http://localhost:5173` in your browser and click **"Try demo without signing in"**.
+1. **Google sign-in only.** The backend verifies the Firebase RS256 token; the user ID comes only from it.
+2. **Photos and voice are never stored.** Decoded in memory, EXIF and GPS stripped, discarded.
+3. **PII redaction** (Aadhaar with Verhoeff checksum, PAN, IFSC, bank account, phone, email)
+   before anything reaches Gemma, a log, a response or storage.
+4. **Gemma never sees** name, email, phone, user ID or address — only crop, district, season,
+   numbers and the media.
+5. **Location is rounded to ~1 km** on the phone and on the server.
+6. **Encrypted profiles** (AES-256-GCM, row-bound), HMAC-hashed user keys, 30-day history TTL.
+7. **Delete my data** removes the profile, all history and the Google account link.
+8. Strict CSP, `X-Frame-Options: DENY`, rate limiting, and the service worker never caches `/ai/*`.
 
 ---
 
-### Option B: Full-Stack Local Environment (FastAPI + Ollama Gemma 4)
-
-#### Prerequisites
-- **Node.js** 20+ & **npm**
-- **Python** 3.11–3.14
-- **[Ollama](https://ollama.com)** with Gemma 4:
-  ```bash
-  ollama pull gemma4:e2b
-  ```
-
-#### 1. Start the FastAPI Backend
-```bash
-cd backend
-
-# Create and activate virtual environment
-python -m venv .venv
-# On Windows (cmd/PowerShell):
-.venv\Scripts\activate
-# On macOS/Linux:
-source .venv/bin/activate
-
-# Install dependencies and dev tools
-pip install -e ".[dev]"
-
-# Configure environment
-cp .env.example .env
-# Set ARTH_AUTH_DISABLED=true for local dev without Firebase, or set ARTH_FIREBASE_PROJECT_ID
-
-# Start FastAPI server on port 8000
-uvicorn app.main:app_factory --factory --port 8000
-```
-Interactive API documentation is accessible at `http://localhost:8000/docs` (in development mode).
-
-#### 2. Start the Frontend Connected to Backend
-```bash
-cd frontend
-
-# In frontend/.env.local:
-# VITE_USE_MOCKS=false
-# VITE_DEV_SIGN_IN=true    (allows local sign-in without Firebase)
-# VITE_API_BASE_URL=       (leave blank; Vite proxies /api to http://localhost:8000)
-
-npm run dev
-```
-
-Open `http://localhost:5173`. The Vite proxy will route all `/api` calls directly to your FastAPI backend.
-
----
-
-## Testing & Quality Assurance
-
-### Frontend
-```bash
-cd frontend
-npm run build   # Type-check and production build
-npm run lint    # ESLint inspection
-```
-
-### Backend
-The backend contains **176 automated tests** covering security, PII scrubbing, dosage math, and error handling without requiring a live Ollama model or internet access:
+## Testing
 
 ```bash
 cd backend
-pytest          # Runs all 176 tests
-ruff check .    # Code style and security checks
+pytest              # 203 tests: rules, soil lookup, calendar windows and stages, API contract, PII, auth
+ruff check .
+
+cd ../frontend
+npm run lint
+npm run build       # strict type-check + production build
 ```
 
 ---
 
-## Data Sources & Acknowledgements
+## Data sources and credits
 
-- **Design System:** Ported with appreciation from [Project Rutu](https://github.com/rushii23-dev/Project-Rutu) (color tokens, typography, cards, and bottom navigation).
-- **AI Models:** [Gemma 4](https://ai.google.dev/gemma) (Google DeepMind) via [Ollama](https://ollama.com); [faster-whisper](https://github.com/SYSTRAN/faster-whisper) (MIT); [PyAV](https://github.com/PyAV-Org/PyAV).
-- **Weather Forecasts:** [Open-Meteo](https://open-meteo.com) (CC BY 4.0).
-- **Mandi Prices:** Directorate of Marketing & Inspection (DMI), Agmarknet via [data.gov.in](https://data.gov.in) (Government Open Data License – India).
+- **Design system and the location-first approach:** [Project Rutu](https://github.com/rushii23-dev/Project-Rutu)
+  (tokens, type, cards, bottom nav; district monsoon and Soil Health Card pipeline).
+- **AI:** [Gemma 4](https://ai.google.dev/gemma) via [Ollama](https://ollama.com); [faster-whisper](https://github.com/SYSTRAN/faster-whisper) (optional); [PyAV](https://github.com/PyAV-Org/PyAV).
+- **Weather:** [Open-Meteo](https://open-meteo.com) (CC BY 4.0).
+- **Mandi prices:** DMI Agmarknet via [data.gov.in](https://data.gov.in) (Government Open Data License – India).
+- **Rainfall:** India Meteorological Department, Pune — gridded daily rainfall 0.25°.
+- **Soil:** Soil Health Card scheme, Ministry of Agriculture & Farmers Welfare — [Nutrient Dashboard](https://soilhealth.dac.gov.in/nutrient-dashboard).
+- **Helpline:** Kisan Call Centre, 1800-180-1551.
 
 ---
 
 ## License
 
-See [LICENSE](LICENSE) for details.
+Apache 2.0 — see [LICENSE](LICENSE).
