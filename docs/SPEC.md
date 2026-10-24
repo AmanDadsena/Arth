@@ -307,6 +307,35 @@ interface SchemeResult {
 }
 ```
 
+### Scheme application tracker
+
+The farmer's own record of applications (stored encrypted, removed by `DELETE /farmer/me`).
+
+| Method | Path | Body | Response |
+|---|---|---|---|
+| GET | `/applications?lang=mr` | – | `{ applications: Application[] }` (open first, nearest `lastDate` first) |
+| PUT | `/applications/{schemeId}?lang=mr` | `ApplicationInput` (replaces the record) | `Application` |
+| DELETE | `/applications/{schemeId}` | – | `{ deleted: true }` (404 if not tracked) |
+
+```ts
+type ApplicationStatus = 'preparing' | 'applied' | 'approved' | 'rejected'
+interface ApplicationInput {
+  status: ApplicationStatus
+  docsReady?: number[]           // indexes into the scheme's documents (stable across languages)
+  appliedOn?: string | null      // YYYY-MM-DD
+  referenceNo?: string | null    // application number; Aadhaar/PAN/phone-like values → 400 reference_is_personal_id
+  lastDate?: string | null       // the farmer's own deadline; Arth never invents official dates
+  note?: string | null           // ≤200 chars, PII-redacted
+}
+interface Application extends Required<ApplicationInput> {
+  schemeId: string; name: string; officialUrl: string; documents: string[]
+  nextStep: string               // localized, from rules
+  createdAt: string; updatedAt: string
+}
+```
+
+Open applications whose `lastDate` is within 7 days appear in `GET /brief` as `type: 'scheme'` actions.
+
 ## 4. Login screen (the one redesign)
 
 The most polished screen in the app, in Rutu's palette and fonts.
