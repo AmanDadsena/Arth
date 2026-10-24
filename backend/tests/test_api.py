@@ -1,6 +1,7 @@
 """End-to-end API behaviour against the contract in docs/SPEC.md."""
-
 import sqlite3
+
+import pytest
 
 from .conftest import PROFILE, auth, jpeg_bytes
 from .test_pii import VALID_AADHAAR
@@ -202,7 +203,7 @@ DOCTOR_OK = {"diagnosis": "Purple blotch", "scientific_name": "Alternaria porri"
 LABEL_OK = {"product_name": "Mancozeb 75% WP", "active_ingredient": "Mancozeb 75% w/w", "formulation": "75% WP",
             "dose_min": 2.5, "dose_max": 2.5, "dose_unit": "g", "dose_basis": "per_litre",
             "water_litres_per_area": None, "waiting_period_days": 15, "safety": ["Wear gloves"],
-            "warnings": ["Toxic to fish"], "readable": True, "confidence": 0.93}
+            "warnings": ["Toxic to fish"], "photo_problem": "none", "confidence": 0.93}
 
 
 def img():
@@ -236,11 +237,19 @@ def test_label_reader_never_guesses(client, net):
     net.llm_replies.append({**LABEL_OK, "dose_min": None, "dose_max": None})
     d = client.post("/api/ai/label-reader", headers=A, files=img()).json()
     assert d["dosePerTank"] is None and d["escalate"] is True
-    net.llm_replies.append({**LABEL_OK, "readable": False})
+    net.llm_replies.append({**LABEL_OK, "photo_problem": "blurry"})
     d = client.post("/api/ai/label-reader", headers=A, files=img()).json()
     assert d["dosePerTank"] is None and d["escalate"] is True and d["waitingPeriodDays"] is None
     net.llm_replies.append({**LABEL_OK, "confidence": 0.3})
     assert client.post("/api/ai/label-reader", headers=A, files=img()).json()["escalate"] is True
+
+
+@pytest.mark.parametrize("problem", ["blurry", "cut_off", "not_a_label"])
+def test_label_photo_problem_never_gives_dose_even_with_values(client, net, problem):
+    """Live finding: a small model copied the dose yet flagged the photo. Never trust such values."""
+    net.llm_replies.append({**LABEL_OK, "photo_problem": problem, "confidence": 1.0})
+    d = client.post("/api/ai/label-reader", headers=A, files=img()).json()
+    assert d["dosePerTank"] is None and d["escalate"] is True
 
 
 def test_model_bad_json_retries_then_fails_cleanly(client, net):

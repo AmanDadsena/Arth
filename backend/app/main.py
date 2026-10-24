@@ -104,7 +104,8 @@ def app_factory() -> FastAPI:
     """Entry point for `uvicorn app.main:app_factory --factory`."""
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
     # httpx logs full request URLs at INFO, which would include the data.gov.in key.
-    logging.getLogger("httpx").setLevel(logging.WARNING)
+    for noisy in ("httpx", "httpx2", "httpcore"):
+        logging.getLogger(noisy).setLevel(logging.WARNING)
     # Uvicorn's access log prints query strings (farm coordinates); ours logs path only.
     logging.getLogger("uvicorn.access").disabled = True
     return create_app()

@@ -105,6 +105,7 @@ class FakeNet:
         self.weather_ok = True
         self.ollama_up = True
         self.jwks_calls = 0
+        self.jwks_ok = True
         self.requests: list[httpx.Request] = []
 
     def handle(self, request: httpx.Request) -> httpx.Response:
@@ -112,6 +113,8 @@ class FakeNet:
         url = str(request.url)
         if url.startswith(JWKS_URL):
             self.jwks_calls += 1
+            if not self.jwks_ok:
+                raise httpx.ConnectTimeout("offline")
             return httpx.Response(200, json=JWKS, headers={"cache-control": "public, max-age=3600"})
         if request.url.host == "127.0.0.1" and request.url.path == "/api/chat":
             if not self.ollama_up:

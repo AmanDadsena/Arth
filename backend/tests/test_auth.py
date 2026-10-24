@@ -78,6 +78,31 @@ def test_jwks_cached(client, net):
     assert net.jwks_calls == 1
 
 
+def test_forged_kids_cannot_force_refetches(client, net):
+    """Live finding: an unknown kid used to trigger a fetch to Google on every request."""
+    get(client, make_token())  # first fetch
+    for i in range(20):
+        assert get(client, make_token(kid=f"forged-{i}")).status_code == 401
+    assert net.jwks_calls == 1
+
+
+def test_google_unreachable_without_cached_keys_is_503(client, net):
+    net.jwks_ok = False
+    r = get(client, make_token())
+    assert r.status_code == 503 and r.json()["error"]["code"] == "auth_unavailable"
+    for _ in range(10):  # and it doesn't hammer Google while down
+        get(client, make_token())
+    assert net.jwks_calls == 1
+
+
+def test_cached_keys_survive_google_outage(client, net):
+    assert get(client, make_token()).status_code == 404  # keys fetched and cached
+    net.jwks_ok = False
+    client.app.state.verifier._expires_at = 0  # cache expired, Google down
+    client.app.state.verifier._last_attempt = -1e9
+    assert get(client, make_token()).status_code == 404  # still verified with cached keys
+
+
 def test_auth_disabled_dev_mode(make_client):
     c = make_client(env="development", auth_disabled=True, firebase_project_id="")
     assert c.get("/api/farmer/me").status_code == 404  # dev user, no profile

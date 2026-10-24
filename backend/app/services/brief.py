@@ -22,6 +22,8 @@ CROP_NAMES = {
     "cotton": {"en": "cotton", "hi": "कपास", "mr": "कापूस"},
     "potato": {"en": "potato", "hi": "आलू", "mr": "बटाटा"},
     "pomegranate": {"en": "pomegranate", "hi": "अनार", "mr": "डाळिंब"},
+    "sugarcane": {"en": "sugarcane", "hi": "गन्ना", "mr": "ऊस"},
+    "maize": {"en": "maize", "hi": "मक्का", "mr": "मका"},
 }
 
 T = {

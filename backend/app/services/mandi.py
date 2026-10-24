@@ -40,6 +40,7 @@ COMMODITY_NAMES = {
     "cotton": "Cotton",
     "pomegranate": "Pomegranate",
     "maize": "Maize",
+    "sugarcane": "Sugarcane",
     "jowar": "Jowar(Sorghum)",
     "bajra": "Bajra(Pearl Millet/Cumbu)",
     "tur": "Arhar (Tur/Red Gram)(Whole)",

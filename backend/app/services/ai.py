@@ -51,6 +51,9 @@ def _clamp01(x: float) -> float:
 
 
 class _LabelOut(BaseModel):
+    # First field on purpose: the model judges the photo before copying values.
+    # A named choice is much harder for a small model to contradict than a bare boolean.
+    photo_problem: Literal["none", "blurry", "cut_off", "not_a_label"]
     product_name: str = Field(max_length=120)
     active_ingredient: str = Field(max_length=200)
     formulation: str | None = Field(default=None, max_length=60)
@@ -62,7 +65,6 @@ class _LabelOut(BaseModel):
     waiting_period_days: int | None = Field(default=None, ge=0, le=365)
     safety: list[str] = Field(default_factory=list, max_length=8)
     warnings: list[str] = Field(default_factory=list, max_length=8)
-    readable: bool
     confidence: float
 
 
@@ -70,8 +72,9 @@ async def read_label(llm: LLM, image_b64: str, lang: Lang, tank_litres: float, c
     request = f"{_lang_line(lang)}\nCrop: {crop or 'not specified'}."
     out = await llm.structured("label_reader", _LabelOut, user_text=request, images=[image_b64])
     confidence = _clamp01(out.confidence)
+    readable = out.photo_problem == "none"
     dose = None
-    if out.readable and confidence >= ESCALATE_BELOW:
+    if readable and confidence >= ESCALATE_BELOW:
         dose = per_tank(dose_min=out.dose_min, dose_max=out.dose_max, unit=out.dose_unit,
                         basis=out.dose_basis, water_litres_per_area=out.water_litres_per_area,
                         tank_litres=tank_litres)
@@ -81,7 +84,7 @@ async def read_label(llm: LLM, image_b64: str, lang: Lang, tank_litres: float, c
         formulation=out.formulation,
         dose_per_tank=DosePerTank(amount=dose.amount, unit=dose.unit) if dose else None,
         tank_size_litres=tank_litres,
-        waiting_period_days=out.waiting_period_days if out.readable else None,
+        waiting_period_days=out.waiting_period_days if readable else None,
         safety=[s[:200] for s in out.safety],
         warnings=[s[:200] for s in out.warnings],
         confidence=round(confidence, 2),

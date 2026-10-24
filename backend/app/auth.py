@@ -10,6 +10,7 @@ on disk so a laptop that loses internet can still verify tokens it already
 holds keys for (tokens themselves expire after one hour).
 """
 
+import asyncio
 import json
 import logging
 import re
@@ -28,6 +29,7 @@ log = logging.getLogger("arth.auth")
 JWKS_URL = "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"
 _MAX_AGE = re.compile(r"max-age=(\d+)")
 _LEEWAY_S = 60
+_MIN_REFRESH_S = 60.0
 
 
 @dataclass(frozen=True)
@@ -47,6 +49,8 @@ class FirebaseVerifier:
         self._cache_file = cache_file
         self._keys: dict[str, object] = {}
         self._expires_at = 0.0
+        self._last_attempt = -_MIN_REFRESH_S  # allow the first fetch immediately
+        self._refresh_lock = asyncio.Lock()
         self._load_disk_cache()
 
     def _set_keys(self, jwks: dict, expires_at: float) -> None:
@@ -64,26 +68,38 @@ class FirebaseVerifier:
                 log.warning("ignoring unreadable JWKS cache")
 
     async def _refresh(self) -> None:
+        self._last_attempt = time.monotonic()
         try:
             r = await self._http.get(JWKS_URL, timeout=5.0)
             r.raise_for_status()
             jwks = r.json()
         except (httpx.HTTPError, ValueError):
-            if self._keys:
-                return  # offline: keep using the cached keys
-            raise ApiError(503, "auth_unavailable", "Sign-in check is unavailable. Try again shortly.") from None
+            log.warning("could not fetch Google signing keys")
+            return  # keep any cached keys; the caller decides what a missing key means
         m = _MAX_AGE.search(r.headers.get("cache-control", ""))
         self._set_keys(jwks, time.time() + (int(m.group(1)) if m else 3600))
         if self._cache_file:
             self._cache_file.write_text(json.dumps(jwks))
 
     async def _key_for(self, kid: str):
-        if time.time() >= self._expires_at or kid not in self._keys:
-            await self._refresh()
+        # Refresh when the cache expired, or for an unknown kid (Google rotates keys) —
+        # but at most once a minute, so forged tokens with random kids can't make
+        # every request wait on a fetch to Google.
+        def due() -> bool:
+            if time.monotonic() - self._last_attempt < _MIN_REFRESH_S:
+                return False
+            return time.time() >= self._expires_at or kid not in self._keys
+
+        if due():
+            async with self._refresh_lock:
+                if due():  # another request may have refreshed while we waited
+                    await self._refresh()
         key = self._keys.get(kid)
-        if key is None:
-            raise _unauthorized()
-        return key
+        if key is not None:
+            return key
+        if not self._keys:
+            raise ApiError(503, "auth_unavailable", "Sign-in check is unavailable. Try again shortly.")
+        raise _unauthorized()
 
     async def verify(self, token: str) -> User:
         try:

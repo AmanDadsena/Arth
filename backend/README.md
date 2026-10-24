@@ -21,8 +21,12 @@ cp .env.example .env          # then fill in ARTH_FIREBASE_PROJECT_ID (or ARTH_A
 uvicorn app.main:app_factory --factory --port 8000
 ```
 
-Point the frontend at it with `VITE_API_BASE_URL=http://localhost:8000/api` and `VITE_USE_MOCKS=false`
-in `frontend/.env.local`. Interactive API docs: http://localhost:8000/docs (development only).
+Connect the frontend: in `frontend/.env.local` set `VITE_USE_MOCKS=false` and leave
+`VITE_API_BASE_URL` empty. `npm run dev` proxies `/api` to this server, so the browser sees one
+origin. With the Firebase values set, sign-in is real Google sign-in. Without them, set
+`VITE_DEV_SIGN_IN=true` here and `ARTH_AUTH_DISABLED=true` in `backend/.env` to sign in locally
+(development builds only; the backend refuses this in production).
+Interactive API docs: http://localhost:8000/docs (development only).
 
 ```bash
 pytest          # 160 tests, no network or model needed
