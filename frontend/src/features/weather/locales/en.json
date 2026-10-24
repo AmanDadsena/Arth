@@ -1,0 +1,33 @@
+{
+  "title": "Weather",
+  "now": "Right now",
+  "feelsLike": "Feels like {{t}}°",
+  "humidity": "Humidity",
+  "wind": "Wind",
+  "rain": "Rain",
+  "kmh": "km/h",
+  "mm": "mm",
+  "next7": "Next 7 days",
+  "today": "Today",
+  "tomorrow": "Tomorrow",
+  "rainChance": "{{p}}% rain",
+  "rainChanceA11y": "{{day}}: {{cond}}, {{min}}° to {{max}}°, {{p}}% chance of rain",
+  "advice": "Farm advice",
+  "noAdvice": "Good weather for field work",
+  "noAdviceBody": "No weather risks for spraying or watering in the next few days.",
+  "empty": "No forecast right now",
+  "emptyBody": "The weather service has no data for your area yet. Check again in a while.",
+  "noLocation": "We don't know where your farm is",
+  "noLocationBody": "Add your village or share location in your profile to see local weather.",
+  "setLocation": "Add farm location",
+  "errorTitle": "Couldn't load the weather",
+  "cond": {
+    "clear": "Sunny",
+    "partly_cloudy": "Partly cloudy",
+    "cloudy": "Cloudy",
+    "rain": "Rain",
+    "heavy_rain": "Heavy rain",
+    "thunderstorm": "Thunderstorm",
+    "fog": "Fog"
+  }
+}

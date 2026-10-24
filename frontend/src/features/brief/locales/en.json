@@ -1,0 +1,31 @@
+{
+  "title": "Today's work",
+  "profile": "Open profile",
+  "listen": "Listen to today's brief",
+  "stop": "Stop",
+  "speakIntro": "Today's work.",
+  "weather": "Weather",
+  "weekWeather": "7 days",
+  "rain": "{{p}}% rain",
+  "dayA11y": "{{day}}: {{cond}}, {{min}}° to {{max}}°, {{p}}% chance of rain",
+  "todo": "What to do today",
+  "noActions": "Nothing urgent today",
+  "noActionsBody": "No weather, price or crop alerts for your farm right now. A good day for routine work.",
+  "prices": "Price alerts",
+  "allPrices": "All prices",
+  "priceA11y": "{{crop}} at {{market}}: {{price}} per quintal, {{dir}} {{pct}}% this week",
+  "dirUp": "up",
+  "dirDown": "down",
+  "dirFlat": "steady",
+  "perQtl": "/qtl",
+  "tools": "Tools",
+  "errorTitle": "Couldn't load today's brief",
+  "hint": {
+    "doctor": "Sick plant? Take a photo",
+    "label": "Read a pesticide label",
+    "mandi": "Today's mandi prices",
+    "calendar": "What to sow, when",
+    "schemes": "Government schemes",
+    "kagaz": "Explain a paper"
+  }
+}
