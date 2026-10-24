@@ -76,20 +76,30 @@ export function weatherDays(n = 7): WeatherDay[] {
   }))
 }
 
+const LOCALE: Record<Lang, string> = { en: 'en-IN', hi: 'hi-IN', mr: 'mr-IN' }
+const REL: Record<Lang, [string, string]> = { en: ['today', 'tomorrow'], hi: ['आज', 'कल'], mr: ['आज', 'उद्या'] }
+
+/** 'tomorrow' / 'उद्या' for the next two days, otherwise the weekday name */
+function dayWord(date: string, days: WeatherDay[], lang: Lang) {
+  const i = days.findIndex((d) => d.date === date)
+  if (i === 0 || i === 1) return REL[lang][i]
+  return new Intl.DateTimeFormat(LOCALE[lang], { weekday: 'long' }).format(new Date(date + 'T00:00:00'))
+}
+
 function advisories(days: WeatherDay[], lang: Lang): Advisory[] {
   const out: Advisory[] = []
   for (const d of days.slice(0, 4)) {
     if (d.rainProb > 60) {
       out.push({
         id: `rain-${d.date}`,
-        severity: 'warning',
+        severity: d.rainProb >= 80 ? 'danger' : 'warning',
         rule: 'rain_no_spray',
         date: d.date,
         title: L(
           {
-            en: `Don't spray on ${d.date === days[1]?.date ? 'tomorrow' : d.date} — ${d.rainProb}% rain`,
-            hi: `${d.date === days[1]?.date ? 'कल' : d.date} छिड़काव न करें — ${d.rainProb}% बारिश`,
-            mr: `${d.date === days[1]?.date ? 'उद्या' : d.date} फवारणी करू नका — ${d.rainProb}% पाऊस`,
+            en: `Don't spray ${dayWord(d.date, days, 'en')} — ${d.rainProb}% rain`,
+            hi: `${dayWord(d.date, days, 'hi')} छिड़काव न करें — ${d.rainProb}% बारिश`,
+            mr: `${dayWord(d.date, days, 'mr')} फवारणी करू नका — ${d.rainProb}% पाऊस`,
           },
           lang,
         ),

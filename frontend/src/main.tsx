@@ -57,10 +57,15 @@ async function start() {
   // dev only: MSW answers the API so requests show in the network tab.
   // Production builds with mocks on answer in-process instead (see lib/api/client).
   if (import.meta.env.DEV && env.useMocks) {
-    const { worker } = await import('./mocks/browser')
-    await worker.start({ quiet: true })
+    // started once per page; hot reloads re-run this module
+    const g = globalThis as { __arthMsw?: Promise<unknown> }
+    g.__arthMsw ??= import('./mocks/browser').then(({ worker }) => worker.start({ quiet: true }))
+    await g.__arthMsw
   }
-  createRoot(document.getElementById('root')!).render(
+  // one root per page, even when a hot reload re-runs this module
+  const g = globalThis as { __arthRoot?: ReturnType<typeof createRoot> }
+  g.__arthRoot ??= createRoot(document.getElementById('root')!)
+  g.__arthRoot.render(
     <StrictMode>
       <Crash>
         <QueryClientProvider client={queryClient}>

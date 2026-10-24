@@ -1,4 +1,5 @@
 import { http } from 'msw'
+import { env } from '@/lib/env'
 import { resolveMock } from './resolve'
 
 /** Dev-time MSW handlers — every endpoint delegates to the shared resolver. */
@@ -27,9 +28,11 @@ const ROUTES: [keyof typeof http, string][] = [
   ['post', '/schemes/match'],
 ]
 
+// Match only API calls under the base URL — a bare `*/weather` would also
+// catch the browser loading the /weather page itself.
 export const handlers = ROUTES.map(([method, path]) => {
   const make = http[method] as typeof http.get
-  return make(`*${path}`, async ({ request }) => {
+  return make(`${env.apiBaseUrl}${path}`, async ({ request }) => {
     const url = new URL(request.url)
     return resolveMock(request.method, path + url.search, await readBody(request))
   })

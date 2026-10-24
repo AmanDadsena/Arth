@@ -60,7 +60,8 @@ export function Layout() {
       <div className="flex h-full flex-col">
         {status === 'demo' ? <DemoBanner /> : null}
         <main key={key} className="sc fade relative flex-1 overflow-y-auto overflow-x-hidden">
-          <div className={`px-4 pt-4 ${showNav ? 'pb-[120px]' : 'pb-10'}`}>
+          {/* bottom room for the nav and the floating mic, so neither covers the last row */}
+          <div className={`px-4 pt-4 ${showNav ? 'pb-[180px]' : 'pb-[100px]'}`}>
             <Suspense fallback={<SkeletonScreen />}>
               <Outlet />
             </Suspense>
