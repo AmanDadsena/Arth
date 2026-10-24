@@ -2,19 +2,16 @@ import { useTranslation } from 'react-i18next'
 import type { FarmerProfile } from '@/lib/api/types'
 import { fmtDate, useLang } from '@/i18n'
 import { Badge } from '@/components/ui'
-import { completeness } from './profileData'
-import { PIcon, Ring } from './parts'
+import { PIcon } from './parts'
 
 /**
- * Who this is and how complete the profile is: initial on a dawn gradient,
- * name, village · district, a few earned badges, and one clear next step.
+ * Who this is: initial on a dawn gradient, name, village · district, the
+ * Google account, and a few earned badges.
  */
-export function ProfileHero({ f, demo, email, onFinish, onFinishCore }: { f: FarmerProfile; demo: boolean; email: string | null; onFinish: () => void; onFinishCore: () => void }) {
+export function ProfileHero({ f, email }: { f: FarmerProfile; email: string | null }) {
   const { t } = useTranslation('profile')
   const { lang } = useLang()
-  const { pct, missing, coreMissing } = completeness(f)
   const initial = f.name.trim().charAt(0).toUpperCase() || '?'
-  const done = pct >= 100
 
   return (
     <div
@@ -47,12 +44,6 @@ export function ProfileHero({ f, demo, email, onFinish, onFinishCore }: { f: Far
       </div>
 
       <div className="relative mt-3 flex flex-wrap gap-1.5">
-        {demo ? (
-          <Badge tone="amber">
-            <PIcon name="star" size={12} />
-            {t('demoUser')}
-          </Badge>
-        ) : null}
         {f.farmingType === 'organic' || f.farmingType === 'mixed' ? (
           <Badge tone="grow">
             <PIcon name="sprout" size={12} />
@@ -71,32 +62,6 @@ export function ProfileHero({ f, demo, email, onFinish, onFinishCore }: { f: Far
           </Badge>
         ) : null}
       </div>
-
-      {/* completion: the ring plus the one thing to do next */}
-      <div className="relative mt-4 flex items-center gap-3.5 rounded-[24px] bg-white/70 p-3 backdrop-blur-sm">
-        <div className="relative flex-none">
-          <Ring pct={pct} size={64} />
-          <span className="num absolute inset-0 flex items-center justify-center text-[16px] font-bold text-grow-d">
-            {done ? <PIcon name="check" size={24} /> : `${pct}%`}
-          </span>
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="text-[16px] font-semibold leading-snug text-ink">{done ? t('hero.allDone') : t('hero.complete', { pct })}</div>
-          <div className="mt-0.5 text-[13.5px] leading-snug text-muted">
-            {done ? t('hero.allDoneHint') : t('hero.completeHint', { count: missing.length + (coreMissing ? 1 : 0) })}
-          </div>
-        </div>
-      </div>
-      {!done ? (
-        <button
-          type="button"
-          onClick={coreMissing ? onFinishCore : onFinish}
-          className="relative mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-3xl bg-ink text-[16px] font-semibold text-white active:brightness-125"
-        >
-          <PIcon name="sparkle" size={18} />
-          {coreMissing ? t('hero.finishCore') : t('hero.finish')}
-        </button>
-      ) : null}
     </div>
   )
 }

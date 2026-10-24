@@ -13,8 +13,6 @@
     "edit": "Edit",
     "confirm": "Confirm",
     "analyzedBy": "Analyzed by {{model}}",
-    "demoBanner": "Demo mode — sample data, nothing is sent",
-    "exitDemo": "Exit demo",
     "error": {
       "title": "Couldn't load this",
       "body": "Something went wrong on our side. Please try again.",
@@ -73,12 +71,10 @@
     "chooseLang": "Choose your language",
     "google": "Sign in with Google",
     "signingIn": "Signing in…",
-    "demo": "Try demo without signing in",
     "trustPhotos": "Photos never stored",
     "trustDelete": "Delete anytime",
     "trustMade": "Made for Maharashtra",
     "privacy": "Privacy Notice",
-    "noSignIn": "Google sign-in is coming soon. Try the demo for now.",
     "failed": "Sign-in didn't finish. Please try again.",
     "privacyTitle": "Your data, plainly",
     "privacyWeStore": "What we keep",
@@ -89,7 +85,20 @@
     "privacyNever2": "Aadhaar, PAN, bank or phone numbers — hidden before any AI sees them",
     "privacyControl": "You're in control",
     "privacyControl1": "Delete all your data anytime from Profile",
-    "privacyControl2": "Sign-in is with Google; we never see your password"
+    "privacyControl2": "Sign-in is with Google; we never see your password",
+    "what": "What Arth does for you",
+    "f1": "Today's work, every morning",
+    "f1b": "Weather, prices and your crops turned into 2–3 jobs.",
+    "f2": "Sow by this year's monsoon",
+    "f2b": "Sowing dates moved to your district's rain, from 40 years of IMD records.",
+    "f3": "Sell at the right mandi",
+    "f3b": "Live Agmarknet prices, transport counted, sell or wait.",
+    "f4": "Photo of a sick leaf? Ask",
+    "f4b": "Gemma 4 reads leaves, pesticide labels and government papers.",
+    "f5": "Your soil, without a lab form",
+    "f5b": "Soil Health Card results for your district, found from your location.",
+    "free": "Free · Marathi, Hindi, English · works on any phone",
+    "noSignIn": "Sign-in is not set up on this build yet. Please try again later."
   },
   "consent": {
     "title": "Before we begin",
@@ -146,8 +155,7 @@
     "deleteFailed": "Couldn't delete right now. Try again.",
     "reauth": "For your safety, Google will ask you to sign in once more.",
     "about": "About Arth",
-    "signedInAs": "Signed in as {{email}}",
-    "demoUser": "Demo farmer"
+    "signedInAs": "Signed in as {{email}}"
   },
   "brief": {},
   "weather": {},

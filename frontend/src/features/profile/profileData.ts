@@ -43,24 +43,6 @@ export function hasBasic(f: FarmerProfile, k: BasicField): boolean {
   return true
 }
 
-/** The core fields onboarding asks for, then the six optional basics. */
-export function completeness(f: FarmerProfile) {
-  const core = [
-    f.name.trim(),
-    f.village.trim(),
-    f.district.trim(),
-    f.crops.length > 0,
-    f.landAcres > 0,
-    f.soilType,
-    f.irrigation,
-    f.tankSizeLitres > 0,
-  ].map(Boolean)
-  const missing = BASIC_FIELDS.filter((k) => !hasBasic(f, k))
-  const total = core.length + BASIC_FIELDS.length
-  const done = core.filter(Boolean).length + (BASIC_FIELDS.length - missing.length)
-  return { pct: Math.round((done / total) * 100), missing, coreMissing: core.some((c) => !c) }
-}
-
 // ---- alerts preferences, kept on this phone only ------------------------
 
 export type AlertKey = 'rain' | 'price' | 'schemes'

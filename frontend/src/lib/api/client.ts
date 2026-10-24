@@ -1,6 +1,5 @@
 import { getIdToken } from '../session'
 import { env } from '../env'
-import { isDemo } from '../demo'
 import type {
   ApiErrorBody,
   Brief,
@@ -18,6 +17,7 @@ import type {
   Season,
   SellAdvice,
   SellAdviceRequest,
+  SoilReport,
   VoiceContext,
   VoiceResponse,
   Weather,
@@ -28,8 +28,8 @@ import type {
  *
  * - Every request carries the sign-in ID token as a Bearer token (lib/session).
  * - A 401 signs the farmer out (see setUnauthorizedHandler).
- * - In demo mode nothing leaves the device: requests are answered in-process
- *   by the mock resolver. With VITE_USE_MOCKS=true (dev) MSW answers instead.
+ * - Everything is live: weather (Open-Meteo), mandi prices (Agmarknet) and
+ *   Gemma 4 all answer through the backend. There is no sample data.
  * - /ai/* calls time out after 20 s with a retryable ApiError.
  */
 
@@ -79,17 +79,6 @@ async function authHeader(): Promise<Record<string, string>> {
 
 async function request<T>(method: string, path: string, opts: RequestOptions = {}): Promise<T> {
   const fullPath = buildPath(path, opts.query)
-
-  // Demo mode, or a production build shipped with mocks on (before the AWS
-  // backend is live): answer in-process. In dev, MSW intercepts fetch instead
-  // so requests still show up in the network tab.
-  if (isDemo() || (env.useMocks && !import.meta.env.DEV)) {
-    // loaded on demand so the mock data never weighs on a signed-in farmer
-    const { resolveMock } = await import('../../mocks/resolve')
-    const res = await resolveMock(method, fullPath, opts.json ?? opts.form)
-    return unwrap<T>(res, path)
-  }
-
   const isAi = path.startsWith('/ai/')
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), isAi ? AI_TIMEOUT_MS : DEFAULT_TIMEOUT_MS)
@@ -121,7 +110,7 @@ async function request<T>(method: string, path: string, opts: RequestOptions = {
 }
 
 async function unwrap<T>(res: Response, path: string): Promise<T> {
-  if (res.status === 401 && !isDemo()) {
+  if (res.status === 401) {
     onUnauthorized()
     throw new ApiError(401, 'unauthorized', 'Signed out')
   }
@@ -176,7 +165,13 @@ export const api = {
       form: form({ audio, lang, context: JSON.stringify(context) }),
     }),
 
-  getCalendar: (season: Season, lang: Lang) => request<CalendarResponse>('GET', '/calendar', { query: { season, lang } }),
+  /** no season: today's season, worked out by the backend */
+  getCalendar: (season: Season | undefined, lang: Lang) =>
+    request<CalendarResponse>('GET', '/calendar', { query: { season, lang } }),
+
+  /** district soil for a point (onboarding) or, with no point, for the saved farm */
+  getSoil: (lang: Lang, at?: { lat: number; lon: number; district?: string }) =>
+    request<SoilReport>('GET', '/soil', { query: { lang, ...at } }),
 
   matchSchemes: (answers: SchemeAnswers, lang: Lang) =>
     request<SchemeMatch>('POST', '/schemes/match', { json: { answers, lang } }),

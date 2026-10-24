@@ -41,7 +41,9 @@
     "moreSub": "Optional — each answer makes the advice fit you better.",
     "add": "Add",
     "yearsValue_one": "{{count}} year",
-    "yearsValue_other": "{{count}} years"
+    "yearsValue_other": "{{count}} years",
+    "soilAuto": "From {{district}} district data",
+    "soilYours": "Set by you"
   },
   "ownership": { "own": "My own", "lease": "Leased", "both": "Own + leased" },
   "farmingType": { "conventional": "Conventional", "organic": "Organic", "mixed": "Mixed" },
@@ -161,8 +163,7 @@
   },
   "status": {
     "online": "Online",
-    "offline": "Offline — showing saved data",
-    "demo": "Demo — sample data, nothing is sent"
+    "offline": "Offline — showing saved data"
   },
   "aboutS": {
     "title": "About Arth",
@@ -173,10 +174,45 @@
     "openSourceSub": "See the code on GitHub",
     "made": "Made for the farmers of Maharashtra"
   },
-  "exitDemo": "Exit demo",
   "error": {
     "noProfile": "No profile yet",
     "noProfileBody": "Answer three short questions so the advice fits your farm.",
     "setup": "Set up my farm"
+  },
+  "settings": {
+    "title": "Settings",
+    "sub": "Language, alerts, farm details, help and your data",
+    "rowSub": "Language, alerts, tank, help, privacy",
+    "rail": {
+      "prefs": "Language",
+      "farm": "Farm",
+      "you": "About you",
+      "help": "Help",
+      "privacy": "Privacy",
+      "about": "About"
+    }
+  },
+  "details": {
+    "title": "Farm details",
+    "hint": "Things we don't ask when you sign up.",
+    "tankSub": "Label doses are worked out for this tank",
+    "tankWhy": "Pick the size of your sprayer tank. The Label Reader scales the dose printed on the label to it.",
+    "soilWhy": "We read your soil from your district's Soil Health Card results. Change it only if your field is different.",
+    "soilAuto": "Use my district's soil ({{district}})"
+  },
+  "you": { "title": "About you", "hint": "Optional. Each answer makes the advice fit you better." },
+  "soil": {
+    "heading": "My soil",
+    "title": "Soil tests in {{district}}",
+    "sub": "{{samples}} Soil Health Card tests, {{cycle}} · share of fields low in each",
+    "noTests": "No Soil Health Card tests published for this district yet.",
+    "nitrogen": "Nitrogen (N)",
+    "phosphorus": "Phosphorus (P)",
+    "potassium": "Potassium (K)",
+    "carbon": "Organic carbon",
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High",
+    "source": "Soil Health Card dashboard"
   }
 }

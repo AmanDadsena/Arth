@@ -25,7 +25,9 @@ export interface FarmerProfile {
   lon: number
   crops: string[]
   landAcres: number
+  /** never asked: the backend fills it from the district unless soilSource is 'farmer' */
   soilType: SoilType
+  soilSource?: 'auto' | 'farmer'
   irrigation: Irrigation
   tankSizeLitres: number
   consentAt: string | null
@@ -40,7 +42,7 @@ export interface FarmerProfile {
   updatedAt?: string
 }
 
-export type FarmerProfileInput = Omit<FarmerProfile, 'createdAt' | 'updatedAt'>
+export type FarmerProfileInput = Omit<FarmerProfile, 'createdAt' | 'updatedAt' | 'soilType'> & { soilType?: SoilType }
 
 export interface DeleteResult {
   deleted: true
@@ -51,10 +53,38 @@ export interface DeleteResult {
 export interface Brief {
   greeting: string
   date: string
+  location: string
+  current: CurrentWeather | null
   weather: WeatherDay[]
   actions: ActionItem[]
   priceAlerts: PriceAlert[]
+  /** the farmer's own crops and their usual stage today */
+  inField: FieldCrop[]
+  seasonNow: SeasonNow | null
   toolCalls: ToolCallLog[]
+}
+
+/** One of the farmer's crops and where it typically stands on today's date. */
+export interface FieldCrop {
+  crop: string
+  name: string
+  phase: 'sow' | 'grow' | 'protect' | 'harvest' | 'rest'
+  stage: string
+  task: string
+  stageFrom: string
+  stageTo: string
+  progress: number
+  /** the crop's whole typical year, for the year map; MM-DD, `end` may cross the new year */
+  year: { start: string; end: string; phase: FieldCrop['phase']; name: string }[]
+}
+
+export interface SeasonNow {
+  season: Season
+  name: string
+  progress: number
+  daysLeft: number
+  nextSeason: Season
+  nextStarts: string
 }
 
 export interface ActionItem {
@@ -111,16 +141,18 @@ export interface Advisory {
   date: string
 }
 
+export interface CurrentWeather {
+  tempC: number
+  feelsLikeC: number
+  humidity: number
+  windKmh: number
+  rainProb: number
+  condition: WeatherCondition
+}
+
 export interface Weather {
   location: string
-  current: {
-    tempC: number
-    feelsLikeC: number
-    humidity: number
-    windKmh: number
-    rainProb: number
-    condition: WeatherCondition
-  }
+  current: CurrentWeather
   daily: WeatherDay[]
   advisories: Advisory[]
 }
@@ -245,10 +277,11 @@ export interface NewsItem {
   date: string
 }
 
-/** Why this crop, now: live weather signals, market signals and dated, sourced news. */
+/** Why this crop, now: live weather and mandi signals, district soil, dated sourced news. */
 export interface WhyNow {
   weather: string[]
   market: string[]
+  soil?: string[]
   news: NewsItem[]
 }
 
@@ -257,15 +290,66 @@ export interface CropRecommendation {
   name: string
   suitability: 'high' | 'medium' | 'low'
   sowingWindow: { from: string; to: string }
+  /** 'onset': a kharif window moved to the district's monsoon onset (IMD record) */
+  windowBasis?: 'onset' | 'calendar'
+  /** open: `days` left to sow; upcoming: `days` until it opens */
+  status?: { phase: 'open' | 'upcoming'; days: number }
   durationDays: number
   why: string
-  whyNow?: WhyNow
+  whyNow?: WhyNow | null
   timeline: TimelineWeek[]
+}
+
+export interface MonsoonOnset {
+  district: string
+  expected: string
+  oldDate: string
+  shiftDays: number
+  significant: boolean
+  years: string
+}
+
+export interface SeasonSpan {
+  season: Season
+  name: string
+  start: string // MM-DD
+  end: string
 }
 
 export interface CalendarResponse {
   season: Season
+  today: string
+  currentSeason: Season | null
+  seasonNow: SeasonNow | null
+  seasons: SeasonSpan[]
+  onset: MonsoonOnset | null
+  inField: FieldCrop[]
   recommendations: CropRecommendation[]
+}
+
+// ---- Soil (from the location, never asked) ---------------------------------
+
+export interface NutrientShares {
+  low: number
+  medium: number
+  high: number
+}
+
+/** District Soil Health Card results: the odds for this farm, not a reading of it. */
+export interface SoilReport {
+  district: string
+  districtLocal: string
+  soilType: SoilType
+  basis: 'district'
+  cycle: string | null
+  samples: number
+  nitrogen: NutrientShares | null
+  phosphorus: NutrientShares | null
+  potassium: NutrientShares | null
+  organicCarbon: NutrientShares | null
+  deficient: Record<string, number>
+  tips: string[]
+  source: string
 }
 
 // ---- Schemes -------------------------------------------------------------

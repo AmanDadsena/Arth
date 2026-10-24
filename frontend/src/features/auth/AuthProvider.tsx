@@ -3,28 +3,25 @@ import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import type { User } from 'firebase/auth'
 import { api, setUnauthorizedHandler } from '@/lib/api/client'
-import { DEMO_FARMER, isDemo, setDemo } from '@/lib/demo'
 import { env } from '@/lib/env'
 import { firebaseReady, getFirebaseAuth } from '@/lib/firebase'
 import { registerTokenGetter } from '@/lib/session'
-import { LANG_KEY, currentLang } from '@/i18n'
+import { LANG_KEY } from '@/i18n'
 
 /**
- * Who is using the app: a Google account (Firebase Auth), the demo farmer, or
- * — in `npm run dev` only — a local developer against a backend with auth off.
- * Screens only read this context; none of them know which one it is.
+ * Who is using the app: a Google account (Firebase Auth), the only way in.
+ * Screens only read this context.
  */
 
-export type AuthStatus = 'loading' | 'signedOut' | 'signedIn' | 'demo'
+export type AuthStatus = 'loading' | 'signedOut' | 'signedIn'
 
 export interface AuthContextValue {
   status: AuthStatus
   displayName: string
   email: string | null
-  /** false until a real sign-in provider is configured */
+  /** false when the Firebase web config is missing from the build */
   canSignIn: boolean
   signInWithGoogle: () => Promise<void>
-  startDemo: () => void
   signOut: () => Promise<void>
   deleteAccount: () => Promise<void>
 }
@@ -32,7 +29,6 @@ export interface AuthContextValue {
 export const AuthContext = createContext<AuthContextValue | null>(null)
 
 const CONSENT_KEY = 'arth.consentAt'
-const DEV_KEY = 'arth.devSignedIn'
 
 /** Remove everything Arth keeps on the device except the language choice. */
 function clearLocal() {
@@ -47,16 +43,7 @@ function clearLocal() {
 }
 
 function initialStatus(): AuthStatus {
-  if (isDemo()) return 'demo'
-  if (env.firebase) return 'loading' // until Firebase restores (or not) the last session
-  if (env.devSignIn) {
-    try {
-      return sessionStorage.getItem(DEV_KEY) === '1' ? 'signedIn' : 'signedOut'
-    } catch {
-      return 'signedOut'
-    }
-  }
-  return 'signedOut'
+  return env.firebase ? 'loading' : 'signedOut' // loading until Firebase restores (or not) the last session
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -77,18 +64,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(u)
         // the SDK refreshes the one-hour token itself; getIdToken() returns the fresh one
         registerTokenGetter(u ? () => u.getIdToken() : null)
-        setStatus((s) => (s === 'demo' ? s : u ? 'signedIn' : 'signedOut'))
+        setStatus(u ? 'signedIn' : 'signedOut')
       })
     }, () => setStatus((s) => (s === 'loading' ? 'signedOut' : s)))
     return () => {
       cancelled = true
       unsubscribe()
     }
-  }, [])
-
-  // Dev sign-in sends no token: the local backend runs with auth disabled.
-  useEffect(() => {
-    if (!env.firebase && env.devSignIn) registerTokenGetter(() => Promise.resolve(null))
   }, [])
 
   const signOut = useCallback(async () => {
@@ -100,7 +82,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         /* still clear everything below */
       }
     }
-    setDemo(false)
     qc.clear()
     clearLocal()
     setStatus('signedOut')
@@ -132,7 +113,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const provider = new fb.mod.GoogleAuthProvider()
       provider.setCustomParameters({ prompt: 'select_account' })
       qc.clear()
-      setDemo(false)
       try {
         await fb.mod.signInWithPopup(fb.auth, provider) // onIdTokenChanged sets status
       } catch (err) {
@@ -142,36 +122,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       return
     }
-    if (env.devSignIn) {
-      qc.clear()
-      setDemo(false)
-      try {
-        sessionStorage.setItem(DEV_KEY, '1')
-      } catch {
-        /* lasts this page load */
-      }
-      setStatus('signedIn')
-      return
-    }
     throw new Error('sign-in-not-configured')
   }, [qc])
 
-  const startDemo = useCallback(() => {
-    qc.clear()
-    setDemo(true)
-    try {
-      // the demo farmer speaks whatever language was picked on the login screen
-      localStorage.setItem('arth.demo.profile', JSON.stringify({ ...DEMO_FARMER, lang: currentLang() }))
-    } catch {
-      /* resolver falls back to DEMO_FARMER */
-    }
-    setStatus('demo')
-    nav('/', { replace: true })
-  }, [qc, nav])
-
   const deleteAccount = useCallback(async () => {
     await api.deleteFarmer() // server data first: it needs the still-valid token
-    if (env.firebase && status === 'signedIn') {
+    if (env.firebase) {
       try {
         const [auth, { deleteUser }] = await Promise.all([getFirebaseAuth(), import('firebase/auth')])
         if (auth.currentUser) await deleteUser(auth.currentUser)
@@ -180,20 +136,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
     await signOut()
-  }, [signOut, status])
+  }, [signOut])
 
   const value = useMemo<AuthContextValue>(
     () => ({
       status,
-      displayName: status === 'demo' ? DEMO_FARMER.name : (user?.displayName ?? ''),
+      displayName: user?.displayName ?? '',
       email: status === 'signedIn' ? (user?.email ?? null) : null,
-      canSignIn: !!env.firebase || env.devSignIn,
+      canSignIn: !!env.firebase,
       signInWithGoogle,
-      startDemo,
       signOut,
       deleteAccount,
     }),
-    [status, user, signInWithGoogle, startDemo, signOut, deleteAccount],
+    [status, user, signInWithGoogle, signOut, deleteAccount],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

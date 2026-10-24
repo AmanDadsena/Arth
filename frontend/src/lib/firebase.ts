@@ -2,8 +2,8 @@ import type { Auth } from 'firebase/auth'
 import { env } from './env'
 
 /**
- * Firebase Auth, loaded on first use so the SDK never weighs on demo mode or
- * on builds without sign-in configured. Only Google sign-in is used.
+ * Firebase Auth, loaded on first use so the SDK stays out of the first paint.
+ * Google sign-in is the only way in.
  */
 
 type AuthModule = typeof import('firebase/auth')

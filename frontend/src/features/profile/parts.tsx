@@ -110,6 +110,13 @@ const EXTRA = {
       <path d="M12 7.5V12l3 2" />
     </>
   ),
+  settings: (
+    <>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 2.8v2.4M12 18.8v2.4M21.2 12h-2.4M5.2 12H2.8M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7M18.5 18.5l-1.7-1.7M7.2 7.2 5.5 5.5" />
+      <circle cx="12" cy="12" r="6.5" />
+    </>
+  ),
 } satisfies Record<string, ReactNode>
 
 export type PIconName = IconName | keyof typeof EXTRA
@@ -239,27 +246,5 @@ export function ToggleRow({ icon, tint, label, sub, on, onToggle }: { icon: PIco
         <span className={`absolute top-[3px] h-6 w-6 rounded-full bg-white shadow-sm transition-all ${on ? 'left-[25px]' : 'left-[3px]'}`} />
       </span>
     </button>
-  )
-}
-
-/** The completion ring in the hero. */
-export function Ring({ pct, size = 74 }: { pct: number; size?: number }) {
-  const r = (size - 8) / 2
-  const c = 2 * Math.PI * r
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden className="flex-none -rotate-90">
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={7} className="stroke-white/70" />
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        fill="none"
-        strokeWidth={7}
-        strokeLinecap="round"
-        strokeDasharray={c}
-        strokeDashoffset={c * (1 - pct / 100)}
-        className="stroke-grow transition-[stroke-dashoffset] duration-700"
-      />
-    </svg>
   )
 }

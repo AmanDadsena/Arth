@@ -10,6 +10,7 @@ import { Layout, PhoneFrame } from './Layout'
 const ConsentPage = lazy(() => import('@/features/auth/ConsentPage'))
 const OnboardingPage = lazy(() => import('@/features/onboarding/OnboardingPage'))
 const ProfilePage = lazy(() => import('@/features/profile/ProfilePage'))
+const SettingsPage = lazy(() => import('@/features/profile/SettingsPage'))
 const BriefPage = lazy(() => import('@/features/brief/BriefPage'))
 const WeatherPage = lazy(() => import('@/features/weather/WeatherPage'))
 const DoctorPage = lazy(() => import('@/features/doctor/DoctorPage'))
@@ -79,6 +80,7 @@ export const router = createBrowserRouter([
           { path: '/calendar', element: <CalendarPage /> },
           { path: '/schemes', element: <SchemesPage /> },
           { path: '/profile', element: <ProfilePage /> },
+          { path: '/settings', element: <SettingsPage /> },
         ],
       },
       { path: '*', element: <Navigate to="/" replace /> },

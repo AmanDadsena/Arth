@@ -2,14 +2,16 @@ import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, Icon } from '@/components/ui'
 import { LANGS, useLang } from '@/i18n'
-import { CROPS, DEFAULTS, FARMING, GOALS, LIVESTOCK, OWNERSHIP, QUESTIONS, SELLS, experienceBucket, isAnswered, type Draft, type QuestionId } from './model'
+import { CROPS, DEFAULTS, QUESTIONS, districtLabel, isAnswered, type Draft, type QuestionId } from './model'
 
-/** Everything the farmer said, as rows. Tapping a row jumps back to that question. */
+/**
+ * Everything the farmer said, as rows. Tapping a row jumps back to that question.
+ * Soil is not a question: the summary says it is read from the district.
+ */
 
-const GROUPS: { id: 'you' | 'farm' | 'more'; rows: QuestionId[] }[] = [
+const GROUPS: { id: 'you' | 'farm'; rows: QuestionId[] }[] = [
   { id: 'you', rows: ['lang', 'name', 'where'] },
-  { id: 'farm', rows: ['crops', 'land', 'ownership', 'soil', 'water', 'tank'] },
-  { id: 'more', rows: ['experience', 'farmingType', 'goals', 'sellsAt', 'livestock'] },
+  { id: 'farm', rows: ['crops', 'land', 'water'] },
 ]
 
 const emojiOf = (id: QuestionId) => QUESTIONS.find((q) => q.id === id)!.emoji
@@ -20,8 +22,6 @@ export function Review({ draft, onJump, editing }: { draft: Draft; onJump: (id: 
   const { t: tc } = useTranslation('common')
   const { lang } = useLang()
 
-  const list = (xs: string[], key: (x: string) => string) => xs.map((x) => t(key(x))).join(', ')
-
   function value(id: QuestionId): { text: ReactNode; emoji?: string; tone?: 'needed' | 'quiet' } {
     const answered = isAnswered(id, draft)
     switch (id) {
@@ -30,7 +30,7 @@ export function Review({ draft, onJump, editing }: { draft: Draft; onJump: (id: 
       case 'name':
         return answered ? { text: draft.name.trim() } : { text: t('review.needed'), tone: 'needed' }
       case 'where':
-        return answered ? { text: `${draft.village.trim()}, ${t(`districts.${draft.district}`, { defaultValue: draft.district })}` } : { text: t('review.needed'), tone: 'needed' }
+        return answered ? { text: `${draft.village.trim()}, ${districtLabel(draft.district, lang)}` } : { text: t('review.needed'), tone: 'needed' }
       case 'crops':
         return answered ? { text: draft.crops.map((c) => tc(`crops.${c}`)).join(', '), emoji: emojiFor(CROPS, draft.crops[0]) } : { text: t('review.needed'), tone: 'needed' }
       case 'land':
@@ -43,40 +43,11 @@ export function Review({ draft, onJump, editing }: { draft: Draft; onJump: (id: 
               ),
             }
           : { text: t('review.needed'), tone: 'needed' }
-      case 'ownership':
-        return draft.landOwnership ? { text: t(`ownership.${draft.landOwnership}`), emoji: emojiFor(OWNERSHIP, draft.landOwnership) } : skipped()
-      case 'soil':
-        return draft.soilType ? { text: tc(`soil.${draft.soilType}`) } : assumed(tc(`soil.${DEFAULTS.soilType}`))
       case 'water':
         return draft.irrigation ? { text: tc(`irrigation.${draft.irrigation}`) } : assumed(tc(`irrigation.${DEFAULTS.irrigation}`))
-      case 'tank':
-        return draft.tankSizeLitres !== undefined
-          ? {
-              text: (
-                <>
-                  <span className="num">{draft.tankSizeLitres}</span> {tc('units.litres')}
-                </>
-              ),
-            }
-          : assumed(`${DEFAULTS.tankSizeLitres} ${tc('units.litres')}`)
-      case 'experience': {
-        const b = experienceBucket(draft.experienceYears)
-        return b ? { text: t(`experience.${b.id}`), emoji: b.emoji } : skipped()
-      }
-      case 'farmingType':
-        return draft.farmingType ? { text: t(`farming.${draft.farmingType}`), emoji: emojiFor(FARMING, draft.farmingType) } : skipped()
-      case 'goals':
-        return answered ? { text: list(draft.goals, (g) => `goals.${g}`), emoji: emojiFor(GOALS, draft.goals[0]) } : skipped()
-      case 'sellsAt':
-        return answered ? { text: list(draft.sellsAt, (s) => `sells.${s}`), emoji: emojiFor(SELLS, draft.sellsAt[0]) } : skipped()
-      case 'livestock':
-        return answered ? { text: list(draft.livestock, (a) => `livestock.${a}`), emoji: emojiFor(LIVESTOCK, draft.livestock[0]) } : skipped()
     }
   }
 
-  function skipped() {
-    return { text: t('review.skipped'), tone: 'quiet' as const }
-  }
   function assumed(v: string) {
     return { text: t('review.assumed', { value: v }), tone: 'quiet' as const }
   }
@@ -133,6 +104,11 @@ export function Review({ draft, onJump, editing }: { draft: Draft; onJump: (id: 
           </Card>
         </section>
       ))}
+
+      <p className="mx-1 mt-4 flex items-start gap-2 text-[14px] leading-snug text-muted">
+        <Icon name="sprout" size={16} className="mt-0.5 text-grow" />
+        {t('review.soilAuto')}
+      </p>
     </div>
   )
 }

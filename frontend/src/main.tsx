@@ -3,7 +3,6 @@ import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from '@/lib/api/queries'
-import { env } from '@/lib/env'
 import { router } from '@/app/router'
 import '@/i18n'
 import './index.css'
@@ -53,15 +52,7 @@ class Crash extends Component<{ children: ReactNode }, { failed: boolean }> {
   }
 }
 
-async function start() {
-  // dev only: MSW answers the API so requests show in the network tab.
-  // Production builds with mocks on answer in-process instead (see lib/api/client).
-  if (import.meta.env.DEV && env.useMocks) {
-    // started once per page; hot reloads re-run this module
-    const g = globalThis as { __arthMsw?: Promise<unknown> }
-    g.__arthMsw ??= import('./mocks/browser').then(({ worker }) => worker.start({ quiet: true }))
-    await g.__arthMsw
-  }
+function start() {
   // one root per page, even when a hot reload re-runs this module
   const g = globalThis as { __arthRoot?: ReturnType<typeof createRoot> }
   g.__arthRoot ??= createRoot(document.getElementById('root')!)
@@ -76,4 +67,4 @@ async function start() {
   )
 }
 
-void start()
+start()

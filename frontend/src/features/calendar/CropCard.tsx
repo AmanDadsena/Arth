@@ -6,6 +6,19 @@ import { WhyNowTeaser } from './WhyNow'
 
 export const SUIT_TONE = { high: 'grow', medium: 'amber', low: 'neutral' } as const
 
+/** Where today sits in the window: open with days left, or opening in N days. */
+export function WindowBadge({ rec }: { rec: CropRecommendation }) {
+  const { t } = useTranslation('calendar')
+  if (!rec.status) return null
+  const open = rec.status.phase === 'open'
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[12.5px] font-semibold ${open ? 'bg-grow text-white' : 'bg-chip text-ink-2'}`}>
+      <Icon name={open ? 'sprout' : 'calendar'} size={13} />
+      {open ? t('status.open', { count: rec.status.days }) : t('status.upcoming', { count: rec.status.days })}
+    </span>
+  )
+}
+
 /** A recommended crop; tapping it opens the week-by-week plan. */
 export function CropCard({ rec, onOpen }: { rec: CropRecommendation; onOpen: () => void }) {
   const { t } = useTranslation('calendar')
@@ -22,6 +35,16 @@ export function CropCard({ rec, onOpen }: { rec: CropRecommendation; onOpen: () 
         <Badge tone={SUIT_TONE[rec.suitability]} className="mt-1 flex-none">
           {t(`suitability.${rec.suitability}`)}
         </Badge>
+      </div>
+
+      <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+        <WindowBadge rec={rec} />
+        {rec.windowBasis === 'onset' ? (
+          <span className="inline-flex items-center gap-1 rounded-lg bg-grow-l px-2 py-1 text-[12.5px] font-semibold text-grow-d">
+            <Icon name="rain" size={13} />
+            {t('followsMonsoon')}
+          </span>
+        ) : null}
       </div>
 
       <div className="mt-3 grid grid-cols-2 gap-2">
