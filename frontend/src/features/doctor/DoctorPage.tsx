@@ -9,7 +9,7 @@ import type { CropDiagnosis, Lang } from '@/lib/api/types'
 import { useLang } from '@/i18n'
 import { AiLoading, AI_MUTATION_OPTIONS, ChoiceChip, CONFIDENCE_TONE, confidenceLevel, ListCard, MIN_CONFIDENCE, PhotoThumb, PhotoTips, useScrollIntoViewOn } from './vision'
 import { useSpeech } from './useSpeech'
-import { useReadAloudOnce } from '@/components/voice'
+import { langOfLocale, NoVoiceHint, useReadAloudOnce } from '@/components/voice'
 
 /** Crop Doctor: photo of a sick plant → what it is, how sure, what to do (organic first). */
 
@@ -170,6 +170,7 @@ function DiagnosisResult({ d, file, onScanAnother }: { d: CropDiagnosis; file: F
             {speech.speaking ? t('stop') : t('listen')}
           </Button>
         ) : null}
+        <NoVoiceHint lang={langOfLocale(locale)} />
       </Card>
 
       {needsExpert ? (

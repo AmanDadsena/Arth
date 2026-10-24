@@ -1,5 +1,7 @@
 export { useVoice, isVoiceSupported, MAX_RECORDING_MS, type VoiceState, type UseVoiceOptions, type UseVoiceResult } from './useVoice'
 export { MicButton, screenFromPath } from './MicButton'
 export { SpeakButton } from './SpeakButton'
-export { speak, stopSpeaking, isSpeechSupported, useSpeakingKey, speechKey } from './speech'
+export { speak, stopSpeaking, isSpeechSupported, useSpeakingKey, speechKey, useMissingVoice } from './speech'
 export { useReadAloudPref, useReadAloudOnce, setReadAloud, sentences } from './readAloud'
+export { useSpeaker, langOfLocale } from './useSpeaker'
+export { NoVoiceHint } from './NoVoiceHint'

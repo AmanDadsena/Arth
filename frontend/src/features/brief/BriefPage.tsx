@@ -21,6 +21,7 @@ import { WeatherIcon, rainTone } from '@/features/weather/WeatherIcon'
 import { dayName } from '@/features/weather/format'
 import { FieldCropCard } from '@/features/calendar/FieldCropCard'
 import { useSpeech } from './useSpeech'
+import { NoVoiceHint } from '@/components/voice'
 import { TodayHero } from './TodayHero'
 
 /**
@@ -284,6 +285,7 @@ function BriefBody({ brief }: { brief: Brief }) {
           {speech.speaking ? t('stop') : t('listen')}
         </Button>
       ) : null}
+      <NoVoiceHint lang={lang} />
 
       {top ? (
         <>

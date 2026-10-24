@@ -4,6 +4,7 @@ import { Icon } from '@/components/ui'
 import { useLang } from '@/i18n'
 import type { Lang } from '@/lib/api/types'
 import { isSpeechSupported, speak, speechKey, stopSpeaking, useSpeakingKey } from './speech'
+import { NoVoiceHint } from './NoVoiceHint'
 
 /**
  * "Listen" pill: reads `text` aloud, tap again to stop. Renders nothing when the
@@ -48,16 +49,19 @@ export function SpeakButton({
 
   const text_ = playing ? t('stopListen') : (label ?? t('listen'))
   return (
-    <button
-      type="button"
-      aria-pressed={playing}
-      onClick={() => (playing ? stopSpeaking() : speak(text, l))}
-      className={`inline-flex h-11 items-center gap-2 rounded-3xl px-4 text-[16px] font-semibold transition ${
-        playing ? 'bg-grow text-white' : 'bg-chip text-ink active:bg-track'
-      } ${className}`}
-    >
-      <Icon name={playing ? 'close' : 'speaker'} size={20} />
-      {text_}
-    </button>
+    <>
+      <button
+        type="button"
+        aria-pressed={playing}
+        onClick={() => (playing ? stopSpeaking() : speak(text, l))}
+        className={`inline-flex h-11 items-center gap-2 rounded-3xl px-4 text-[16px] font-semibold transition ${
+          playing ? 'bg-grow text-white' : 'bg-chip text-ink active:bg-track'
+        } ${className}`}
+      >
+        <Icon name={playing ? 'close' : 'speaker'} size={20} />
+        {text_}
+      </button>
+      <NoVoiceHint lang={l} className="basis-full" />
+    </>
   )
 }
