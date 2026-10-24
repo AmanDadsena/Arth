@@ -101,7 +101,7 @@ Here is the explicit breakdown of what our team engineered from scratch versus w
 | **Crop calendar** | A **year map** of the farm (seasons, each crop's stages, the monsoon, a line at today), what is in the field now, which crops can be sown **today** (with days left) and which open soon. | Today's date, IMD monsoon onset per district, Soil Health Card |
 | **Crop Doctor** | Photo of a sick leaf → disease, severity, organic and chemical remedies. Below 60% confidence it says "not sure" and offers the Kisan Call Centre. | Gemma 4 vision |
 | **Label Reader** | Photo of a pesticide label → the dose for *this farmer's* sprayer tank. Never guesses a dose. | Gemma 4 reads; Python calculates |
-| **Mandi & Sell Smart** | Nearby APMC prices, 30-day trend, sell now or wait after transport cost. | data.gov.in Agmarknet, Open-Meteo geocoding |
+| **Mandi & Sell Smart** | Nearby APMC prices, 30-day trend, sell now or wait after transport cost. | MSAMB APMC prices (no key) or data.gov.in Agmarknet, Open-Meteo geocoding |
 | **Kagaz Samjho** | Photo of a government or bank paper → plain-language summary, deadlines, next steps; Aadhaar/PAN/bank numbers hidden first. | PII redaction + Gemma 4 |
 | **Schemes** | One question per screen → PM-Kisan, PMFBY, KCC, PMKSY, MahaDBT and others he qualifies for. | Rules engine |
 | **Voice** | Ask anything by voice from any screen. | Gemma 4 native audio |
@@ -215,7 +215,7 @@ flowchart TD
 | What | Source | Freshness |
 | :--- | :--- | :--- |
 | Weather, 7-day forecast | [Open-Meteo](https://open-meteo.com) | live, cached 15 min |
-| Mandi prices, 30-day trend | Agmarknet on [data.gov.in](https://data.gov.in) | live, stored daily so the trend builds up |
+| Mandi prices, 30-day trend | [MSAMB](https://www.msamb.com) APMC prices (no key), or Agmarknet on [data.gov.in](https://data.gov.in) with a key | live, 7 days per fetch, stored daily so the trend builds up |
 | Market locations / distances | Open-Meteo geocoding | live, cached |
 | Monsoon onset per district | IMD Pune gridded daily rainfall, 1985–2025 | built offline (`build_districts.py`) |
 | District soil (N, P, K, OC, S, Zn, B, Fe) | Soil Health Card Nutrient Dashboard | latest completed testing cycle |
@@ -232,7 +232,7 @@ flowchart TD
 - **Python** 3.11+
 - **[Ollama](https://ollama.com)** with Gemma 4: `ollama pull gemma4:e2b`
 - A **Firebase** project with Google sign-in enabled (free tier is enough)
-- Optional: a free **data.gov.in** API key for mandi prices
+- Optional: a free **data.gov.in** API key (mandi prices work without one, from MSAMB)
 
 ### 1. Firebase (Google sign-in)
 
