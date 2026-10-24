@@ -525,6 +525,22 @@ def test_brief_has_today(client):
     assert not any("20" in a["title"] and "-" in a["title"] for a in b["actions"])  # no raw ISO dates
 
 
+def test_onboarded_version_round_trip(client):
+    p = client.put("/api/farmer/me", json=PROFILE, headers=A).json()
+    assert "onboardedVersion" not in p  # older profiles: the app sends them through onboarding
+    p = client.put("/api/farmer/me", json={**PROFILE, "onboardedVersion": 2}, headers=A).json()
+    assert p["onboardedVersion"] == 2
+    assert client.get("/api/farmer/me", headers=A).json()["onboardedVersion"] == 2
+
+
+def test_water_sources_round_trip(client):
+    p = client.put("/api/farmer/me", json={**PROFILE, "irrigation": "drip", "waterSources": ["rainfed", "drip", "drip"]},
+                   headers=A).json()
+    assert p["waterSources"] == ["rainfed", "drip"]
+    assert p["irrigation"] == "drip"
+    assert "waterSources" not in client.put("/api/farmer/me", json=PROFILE, headers=A).json()
+
+
 def test_model_kept_loaded_with_configured_keep_alive(make_client, net):
     """Live finding: voice timed out (504) after Ollama unloaded the model following 30 idle minutes."""
     client = make_client(llm_keep_alive="6h", stt_backend="whisper")

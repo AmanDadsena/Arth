@@ -28,7 +28,10 @@ export interface FarmerProfile {
   /** never asked: the backend fills it from the district unless soilSource is 'farmer' */
   soilType: SoilType
   soilSource?: 'auto' | 'farmer'
+  /** the main source, used by the advisories; with several, the most controlled one */
   irrigation: Irrigation
+  /** every source the farmer uses (onboarding is multi-choice); older profiles lack it */
+  waterSources?: Irrigation[]
   tankSizeLitres: number
   consentAt: string | null
   // basic questions asked right after sign-in — all optional, older profiles lack them
@@ -38,6 +41,8 @@ export interface FarmerProfile {
   goals?: string[] // 'more_yield' | 'better_price' | 'less_cost' | 'save_water' | 'schemes' | 'organic'
   sellsAt?: string[] // 'mandi' | 'trader' | 'fpo' | 'direct' | 'contract'
   livestock?: string[] // 'cow' | 'buffalo' | 'goat' | 'poultry' | 'none'
+  /** onboarding questions version answered; below the current one the app asks them again */
+  onboardedVersion?: number
   createdAt?: string
   updatedAt?: string
 }

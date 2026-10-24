@@ -79,7 +79,8 @@ interface FarmerProfile {
   landAcres: number
   soilType: SoilType       // never asked: filled from the district (Soil Health Card / soil map)
   soilSource?: 'auto' | 'farmer' // 'farmer' = corrected in Settings and kept as given
-  irrigation: Irrigation
+  irrigation: Irrigation   // main source; with several, the most controlled (drip > sprinkler > borewell > canal > rainfed)
+  waterSources?: Irrigation[] // every source the farmer uses (onboarding is multi-choice); older profiles lack it
   tankSizeLitres: number   // sprayer tank, usually 15 or 16
   consentAt: string | null // ISO timestamp the farmer agreed to the privacy notice
   // optional "basic questions" asked right after sign-in
@@ -89,6 +90,7 @@ interface FarmerProfile {
   goals?: string[]         // 'more_yield' | 'better_price' | 'less_cost' | 'save_water' | 'schemes' | 'organic'
   sellsAt?: string[]       // 'mandi' | 'trader' | 'fpo' | 'direct' | 'contract'
   livestock?: string[]     // 'cow' | 'buffalo' | 'goat' | 'poultry' | 'none'
+  onboardedVersion?: number // onboarding questions version answered; below the current one the app asks again
   createdAt?: string
   updatedAt?: string
 }

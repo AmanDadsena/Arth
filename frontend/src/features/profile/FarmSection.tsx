@@ -68,7 +68,7 @@ export function FarmSection({ f, onEditCore, onEditSoil }: { f: FarmerProfile; o
         <Big value={<span className="num">{f.landAcres}</span>} unit={tc('units.acres')} />
       </Tile>
       <Tile icon="drop" label={t('tile.water')} onClick={onEditCore}>
-        <Word>{tc(`irrigation.${f.irrigation}`)}</Word>
+        <Word>{(f.waterSources ?? [f.irrigation]).map((w) => tc(`irrigation.${w}`)).join(', ')}</Word>
       </Tile>
       <Tile icon="layers" label={t('tile.soil')} onClick={onEditSoil} wide note={auto ? t('tile.soilAuto', { district: f.district }) : t('tile.soilYours')}>
         <Word>{tc(`soil.${f.soilType}`)}</Word>
