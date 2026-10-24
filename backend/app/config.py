@@ -41,6 +41,9 @@ class Settings(BaseSettings):
     llm_timeout_s: float = 18.0  # frontend aborts /ai/* at 20 s
     llm_max_concurrency: int = 2  # one laptop GPU; more just queues inside Ollama
     llm_num_ctx: int = 8192
+    # How long Ollama keeps the model loaded after the last request. E2B needs ~3 GB of VRAM;
+    # a reload costs 10-20 s, which voice can't absorb (live finding: 504s after 30 idle minutes).
+    llm_keep_alive: str = Field(default="4h", pattern=r"^(-1|\d+[smh])$")
 
     # --- Speech to text ---
     stt_backend: Literal["gemma", "whisper"] = "gemma"  # gemma = Gemma 4 native audio (no extra download)
