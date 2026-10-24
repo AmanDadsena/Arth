@@ -87,6 +87,23 @@ def mandi_records(commodity="Onion"):
     return rows
 
 
+def msamb_grid(english: bool) -> str:
+    """Rows shaped like msamb.com's DataGridBind output (newest day first, 7-cell rows)."""
+    today = date.today()
+    names = {"Lasalgaon": "लासलगाव", "Pune": "पुणे", "Yeola": "येवला"}
+    out = []
+    for d in range(0, 8):
+        day = today - timedelta(days=d)
+        out.append(f'<tr><td colspan="7">{day.strftime("%d/%m/%Y")}</td></tr>')
+        for i, (market, base) in enumerate([("Lasalgaon", 2400), ("Pune", 2700), ("Yeola", 2300)]):
+            name = market.upper() if english else names[market]
+            unit = "QUINTAL" if english else "क्विंटल"
+            modal = base - d * 10 + i
+            out.append(f"<tr><td>{name}</td><td>----</td><td>{unit}</td><td>500</td><td>{base - 300}</td>"
+                       f"<td>{base + 300}</td><td>{modal}</td></tr>")
+    return "\n".join(out)
+
+
 GEO = {
     "Lasalgaon": (20.1427, 74.2395, "Nashik"),
     "Pune": (18.5196, 73.8553, "Pune"),
@@ -102,6 +119,8 @@ class FakeNet:
         self.llm_requests: list[dict] = []
         self.forecast = forecast_payload()
         self.mandi_ok = True
+        self.msamb_english = False
+        self.msamb_calls: list[str] = []
         self.weather_ok = True
         self.ollama_up = True
         self.model_loaded = True
@@ -144,6 +163,31 @@ class FakeNet:
                 return httpx.Response(503)
             commodity = request.url.params.get("filters[commodity]")
             return httpx.Response(200, json={"records": mandi_records(commodity)})
+        if request.url.host == "www.msamb.com":
+            return self._msamb(request)
+        return httpx.Response(404)
+
+    def _msamb(self, request: httpx.Request) -> httpx.Response:
+        """Fake MSAMB: the grid needs the page's session cookie and starts in Marathi."""
+        self.msamb_calls.append(request.url.path)
+        if not self.mandi_ok:
+            return httpx.Response(503)
+        if request.url.path == "/ApmcDetail/APMCPriceInformation":
+            return httpx.Response(200, text="<html></html>", headers={"set-cookie": "ASP.NET_SessionId=s1; path=/"})
+        if request.url.path == "/ApmcDetail/Profile":
+            return httpx.Response(200, text="<html></html>", headers={"set-cookie": "ASP.NET_SessionId=s1; path=/"})
+        if request.url.path == "/ApmcDetail/GetDistrictForAPMCProfile":
+            return httpx.Response(200, json=[
+                {"DistrictNameE": "NASIK", "ApmcList": [{"ApmcNameE": "Lasalgaon"}, {"ApmcNameE": "Yeola"}]},
+                {"DistrictNameE": "PUNE", "ApmcList": [{"ApmcNameE": "Pune"}]},
+            ])
+        if request.url.path == "/Home/ChangeLanguage":
+            self.msamb_english = not self.msamb_english
+            return httpx.Response(200, text="ok")
+        if request.url.path == "/ApmcDetail/DataGridBind":
+            if "ASP.NET_SessionId=s1" not in request.headers.get("cookie", ""):
+                return httpx.Response(200, text="")  # what the real site does without a session
+            return httpx.Response(200, text=msamb_grid(english=self.msamb_english))
         return httpx.Response(404)
 
 
