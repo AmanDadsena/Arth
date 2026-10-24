@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { BottomSheet, Icon, LanguageSwitcher, type IconName } from '@/components/ui'
+import { BottomSheet, Icon, type IconName } from '@/components/ui'
 import { useLang } from '@/i18n'
 import { useAuth } from './useAuth'
 
@@ -44,7 +44,7 @@ function Dawn() {
       </div>
 
       {/* three layers of hills, furrows on the nearest, then the ground in Rutu's screen colour */}
-      <svg className="absolute inset-x-0 bottom-0 h-[44%] min-h-[150px] w-full" viewBox="0 0 400 200" preserveAspectRatio="none">
+      <svg className="absolute inset-x-0 -bottom-[2px] h-[44%] min-h-[150px] w-full" viewBox="0 0 400 200" preserveAspectRatio="none">
         <g className="dawn-far">
           <path d="M-20 70 C 40 34, 90 44, 140 60 S 240 22, 300 48 S 390 36, 440 56 L 440 200 L -20 200 Z" fill="#B7C7A4" />
         </g>
@@ -195,12 +195,7 @@ export default function LoginPage() {
 
       {/* ground: actions */}
       <section className="px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-1">
-        <div className="dawn-up-2">
-          <div className="mb-2 px-1 text-[13px] font-semibold uppercase tracking-[1.4px] text-faint">{t('chooseLang')}</div>
-          <LanguageSwitcher tone="glass" />
-        </div>
-
-        <div className="dawn-up-3 mt-5 space-y-2.5">
+        <div className="dawn-up-2 space-y-2.5">
           <button
             type="button"
             onClick={() => void google()}
