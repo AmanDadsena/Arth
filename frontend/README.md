@@ -21,7 +21,7 @@ There is no demo mode and no mock API.
 
 | Route | Screen | Notes |
 | :--- | :--- | :--- |
-| `/login` | Landing + sign-in | Dawn hills, cycling tagline, language switcher, **Sign in with Google**, "What Arth does for you" |
+| `/login` | Sign-in | Dawn hills, cycling tagline, **Sign in with Google**, trust chips, privacy notice |
 | `/consent` | Privacy consent | What is kept, what never is |
 | `/onboarding` | 6 questions | Language, name, place (GPS or district), crops, land, water. Soil is **found** from the place and shown, never asked |
 | `/` | Home — Aaj Ka Kaam | `TodayHero` (live sky, weather now, season progress), the top job, crops in the field today, 4-day weather, price alerts, tools |

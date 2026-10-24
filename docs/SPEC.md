@@ -364,10 +364,9 @@ interface SchemeResult {
 }
 ```
 
-## 4. Login screen (the landing page)
+## 4. Login screen (the one redesign)
 
-The most polished screen in the app, in Rutu's palette and fonts. It is also the landing page,
-so below the sign-in button it says in five lines what Arth does for a farmer.
+The most polished screen in the app, in Rutu's palette and fonts.
 
 - Full-height dawn gradient (cream → soft saffron → pale green at the horizon).
 - 3 layered SVG hills (parallax depths of `grow` greens), fields hinted with thin furrow lines.
@@ -377,8 +376,6 @@ so below the sign-in button it says in five lines what Arth does for a farmer.
 - Language chips (मराठी · हिंदी · English) — picking one sets the app language.
 - Trust chips: "🔒 Photos never stored", "🗑️ Delete anytime", "🇮🇳 Made for Maharashtra".
 - Official Google sign-in button (white, Google "G" mark, per brand guidelines).
-- "What Arth does for you": five rows (today's work, sowing by this year's monsoon, sell at the
-  right mandi, ask about a sick leaf, your soil without a lab form).
 - Footer link "Privacy Notice" opening a bottom sheet (what we store / never store / 30-day delete).
 - Must look right at 360 px and 414 px widths.
 

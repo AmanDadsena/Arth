@@ -36,8 +36,7 @@ Read sections 1–4 out loud a few times; sections 5–12 are for when the jury 
 
 ## 4. The journey of one farmer (use this as your demo script)
 
-1. **Login** – dawn sky, hills, rising sun. Pick a language, read "What Arth does for you", then
-   "Sign in with Google" (the only way in).
+1. **Login** – dawn sky, hills, rising sun. "Sign in with Google" (the only way in).
 2. **Consent** – a plain list: what we store, what we never store. Nothing is saved before "Agree".
 3. **Onboarding** – six questions, one per screen: language, name, place, crops, land, water.
    **Soil is never asked**: after the place, a card shows "Black soil in Nashik, 74% of fields low in

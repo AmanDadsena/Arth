@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { BottomSheet, Icon, LanguageSwitcher, type IconName } from '@/components/ui'
+import { BottomSheet, Icon, type IconName } from '@/components/ui'
 import { useLang } from '@/i18n'
 import { useAuth } from './useAuth'
 
 /**
- * The landing page and the only way in (Google sign-in). Dawn over the Nashik
- * hills: the sun rises behind three layers of fields while the wordmark settles
- * and the tagline cycles through Marathi, Hindi and English. Below the fold, in
- * five lines, what Arth does for a farmer. Everything is static under
+ * The one redesigned screen. Dawn over the Nashik hills: the sun rises behind
+ * three layers of fields while the wordmark settles and the tagline cycles
+ * through Marathi, Hindi and English. Everything is static under
  * prefers-reduced-motion. Rutu's palette and type throughout.
  */
 
@@ -117,39 +116,6 @@ function TrustChip({ icon, children }: { icon: IconName; children: string }) {
   )
 }
 
-const FEATURES: { icon: IconName; title: string; body: string; tint: string }[] = [
-  { icon: 'home', title: 'f1', body: 'f1b', tint: 'bg-grow text-white' },
-  { icon: 'calendar', title: 'f2', body: 'f2b', tint: 'bg-grow-l text-grow' },
-  { icon: 'mandi', title: 'f3', body: 'f3b', tint: 'bg-amber-l text-amber' },
-  { icon: 'doctor', title: 'f4', body: 'f4b', tint: 'bg-warn-l text-warn' },
-  { icon: 'sprout', title: 'f5', body: 'f5b', tint: 'bg-grow-l text-grow-d' },
-]
-
-function WhatYouGet() {
-  const { t } = useTranslation('login')
-  return (
-    <section className="dawn-up-3 mt-6" aria-labelledby="what">
-      <h2 id="what" className="display mx-1 text-[22px] text-ink">
-        {t('what')}
-      </h2>
-      <ul className="mt-3 space-y-2">
-        {FEATURES.map((f) => (
-          <li key={f.title} className="flex items-start gap-3.5 rounded-[22px] bg-card px-4 py-3.5">
-            <span className={`flex h-11 w-11 flex-none items-center justify-center rounded-2xl ${f.tint}`}>
-              <Icon name={f.icon} size={22} />
-            </span>
-            <span className="min-w-0">
-              <span className="block text-[16.5px] font-semibold leading-snug text-ink">{t(f.title)}</span>
-              <span className="mt-0.5 block text-[14px] leading-snug text-muted">{t(f.body)}</span>
-            </span>
-          </li>
-        ))}
-      </ul>
-      <p className="mt-3 text-center text-[13.5px] font-semibold text-grow-d">{t('free')}</p>
-    </section>
-  )
-}
-
 function PrivacyNotice({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useTranslation('login')
   const Section = ({ title, icon, tone, items }: { title: string; icon: IconName; tone: string; items: string[] }) => (
@@ -227,10 +193,9 @@ export default function LoginPage() {
         </div>
       </section>
 
-      {/* ground: language, sign-in, what you get */}
+      {/* ground: actions */}
       <section className="px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-1">
         <div className="dawn-up-2 space-y-2.5">
-          <LanguageSwitcher size="sm" />
           <button
             type="button"
             onClick={() => void google()}
@@ -246,8 +211,6 @@ export default function LoginPage() {
             </p>
           ) : null}
         </div>
-
-        <WhatYouGet />
 
         <div className="dawn-up-3 mt-5 flex flex-wrap justify-center gap-2">
           <TrustChip icon="lock">{t('trustPhotos')}</TrustChip>

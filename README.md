@@ -39,7 +39,7 @@ real and current.
 
 | Screen | What it does | Where the answer comes from |
 | :--- | :--- | :--- |
-| **Sign in** | A dawn landing page: what Arth does, in five lines, then **Sign in with Google** (the only way in). | Firebase Auth |
+| **Sign in** | Dawn over the hills, the wordmark and a tagline in three languages, then **Sign in with Google** (the only way in). | Firebase Auth |
 | **Home — Aaj Ka Kaam** | The sky right now over the farm, how far into the sowing season we are, the **one most important job today** in big type, where each of the farmer's crops usually stands today, 4-day weather, price moves. One button reads it all aloud. | Open-Meteo, Agmarknet, crop-stage calendar |
 | **Crop calendar** | A **year map** of the farm (seasons, each crop's stages, the monsoon, a line at today), what is in the field now, which crops can be sown **today** (with days left) and which open soon. | Today's date, IMD monsoon onset per district, Soil Health Card |
 | **Crop Doctor** | Photo of a sick leaf → disease, severity, organic and chemical remedies. Below 60% confidence it says "not sure" and offers the Kisan Call Centre. | Gemma 4 vision |
@@ -61,14 +61,12 @@ real and current.
 2. **A new Home.** Built to answer one question at a glance: a live "sky" card (weather now,
    place, season progress), the single most important job of the day, and a card per crop
    showing its usual stage today.
-3. **A landing page that explains itself.** The sign-in screen now says, in five lines, what Arth
-   does for a farmer, before asking him to sign in.
-4. **A calmer Profile, and a real Settings screen.** Profile keeps farm, soil and tools. Language,
+3. **A calmer Profile, and a real Settings screen.** Profile keeps farm, soil and tools. Language,
    alerts, sprayer tank, optional questions, help, privacy and "about" moved to **Settings**.
-5. **Soil is never asked** (the way Project Rutu does it). From the farm's location Arth finds
+4. **Soil is never asked** (the way Project Rutu does it). From the farm's location Arth finds
    the district, its dominant soil type and its **Soil Health Card** results. Onboarding went
    from 14 questions to **6** (language, name, place, crops, land, water).
-6. **The calendar runs on today's date.** It knows the season, what each of the farmer's crops
+5. **The calendar runs on today's date.** It knows the season, what each of the farmer's crops
    is usually doing this week, which sowing windows are open now and how many days are left,
    and it moves **kharif** windows to the district's own **monsoon onset** from 40 years of IMD
    rainfall. "Why now" lines come from the live forecast, live prices and district soil data.
@@ -248,7 +246,7 @@ Arth/
 │   └── src/
 │       ├── app/                      router, layout, bottom nav, mic
 │       ├── features/
-│       │   ├── auth/                 Google sign-in, landing page, consent
+│       │   ├── auth/                 Google sign-in screen, consent
 │       │   ├── onboarding/           6 questions, soil found from location
 │       │   ├── brief/                Home: TodayHero, top job, crops today
 │       │   ├── calendar/             YearMap, FieldCropCard, sow-now list, week plans
