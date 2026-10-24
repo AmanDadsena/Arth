@@ -64,6 +64,13 @@ class Settings(BaseSettings):
     transport_rs_per_quintal_km: float = 2.0  # assumption, shown to farmer as an estimate
     http_timeout_s: float = 8.0
 
+    # --- Cloud sync (optional; aws/sync_lambda.py) ---
+    # Only anonymous scheme-interest records, and only when the farmer opts in.
+    # Server-side only: never put these in a VITE_ variable, the browser bundle is public.
+    sync_url: str = Field(default="", pattern=r"^(https://\S+)?$")
+    sync_secret: str = ""
+    sync_interval_s: float = 300.0
+
     # --- Upload limits (match docs/SPEC.md) ---
     max_image_bytes: int = 5 * 1024 * 1024
     max_audio_bytes: int = 2 * 1024 * 1024
@@ -78,6 +85,8 @@ class Settings(BaseSettings):
 
     def check_safe(self) -> None:
         """Fail fast on configurations that would be insecure in production."""
+        if self.sync_url and len(self.sync_secret) < 32:
+            raise RuntimeError("ARTH_SYNC_SECRET must be at least 32 characters when ARTH_SYNC_URL is set")
         if self.env == "production":
             if self.auth_disabled:
                 raise RuntimeError("ARTH_AUTH_DISABLED must be false in production")

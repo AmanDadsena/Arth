@@ -58,6 +58,13 @@ CREATE TABLE IF NOT EXISTS geocodes (
     lat   REAL,
     lon   REAL
 );
+CREATE TABLE IF NOT EXISTS outbox (
+    record_id  TEXT PRIMARY KEY,
+    uid_hash   TEXT NOT NULL,
+    payload    TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS outbox_uid ON outbox(uid_hash);
 """
 
 
@@ -143,6 +150,7 @@ class Database:
             self._conn.execute("BEGIN")
             try:
                 self._conn.execute("DELETE FROM history WHERE uid_hash=?", (h,))
+                self._conn.execute("DELETE FROM outbox WHERE uid_hash=?", (h,))
                 self._conn.execute("DELETE FROM profiles WHERE uid_hash=?", (h,))
                 self._conn.execute("COMMIT")
             except Exception:
@@ -176,6 +184,35 @@ class Database:
     def purge_expired(self) -> int:
         with self._lock:
             return self._conn.execute("DELETE FROM history WHERE expires_at<=?", (now_iso(),)).rowcount
+
+    # --- cloud sync outbox (anonymous records only, see services/sync.py) ------
+
+    def share_id(self, uid: str, scheme_id: str, day: str) -> str:
+        """Same farmer + scheme + day -> same id, so a repeat tap is one record.
+
+        Keyed with its own sub-key: ids can't be linked to each other or to the user
+        without the local key, which never leaves this machine.
+        """
+        key = hmac.new(self._uid_key, b"arth-share-v1", hashlib.sha256).digest()
+        return hmac.new(key, f"{uid}|{scheme_id}|{day}".encode(), hashlib.sha256).hexdigest()[:32]
+
+    def outbox_add(self, uid: str, record: dict) -> None:
+        self._x("INSERT OR IGNORE INTO outbox(record_id, uid_hash, payload, created_at) VALUES (?,?,?,?)",
+                (record["recordId"], self.uid_hash(uid), json.dumps(record), now_iso()))
+
+    def outbox_count(self, uid: str | None = None) -> int:
+        if uid is None:
+            return self._x("SELECT COUNT(*) n FROM outbox")[0]["n"]
+        return self._x("SELECT COUNT(*) n FROM outbox WHERE uid_hash=?", (self.uid_hash(uid),))[0]["n"]
+
+    def outbox_pending(self, limit: int) -> list[dict]:
+        rows = self._x("SELECT payload FROM outbox ORDER BY created_at LIMIT ?", (limit,))
+        return [json.loads(r["payload"]) for r in rows]
+
+    def outbox_done(self, record_ids: list[str]) -> None:
+        # Sent records are deleted, not kept: the cloud copy is the only copy.
+        with self._lock:
+            self._conn.executemany("DELETE FROM outbox WHERE record_id=?", [(i,) for i in record_ids])
 
     # --- public market data ---------------------------------------------------
 

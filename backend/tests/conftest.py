@@ -21,7 +21,10 @@ from app.auth import JWKS_URL
 from app.config import Settings
 from app.main import create_app
 
+from . import fake_lambda
+
 PROJECT = "arth-test"
+SYNC_URL = "https://sync.test.on.aws/"
 KID = "test-kid"
 
 _private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
@@ -127,6 +130,10 @@ class FakeNet:
         self.jwks_calls = 0
         self.jwks_ok = True
         self.requests: list[httpx.Request] = []
+        self.sync_up = True
+        self.sync_table = fake_lambda.FakeTable()
+        self.sync_lambda = fake_lambda.load(self.sync_table)
+        self.sync_bodies: list[dict] = []
 
     def handle(self, request: httpx.Request) -> httpx.Response:
         self.requests.append(request)
@@ -165,7 +172,20 @@ class FakeNet:
             return httpx.Response(200, json={"records": mandi_records(commodity)})
         if request.url.host == "www.msamb.com":
             return self._msamb(request)
+        if request.url.host == "sync.test.on.aws":
+            return self._sync(request)
         return httpx.Response(404)
+
+    def _sync(self, request: httpx.Request) -> httpx.Response:
+        """The real aws/sync_lambda.py behind a fake Function URL."""
+        if not self.sync_up:
+            raise httpx.ConnectError("offline")
+        self.sync_bodies.append(json.loads(request.content))
+        ev = {"requestContext": {"http": {"method": request.method}},
+              "headers": {k.lower(): v for k, v in request.headers.items()},
+              "body": request.content.decode(), "isBase64Encoded": False}
+        out = self.sync_lambda.handler(ev, None)
+        return httpx.Response(out["statusCode"], content=out["body"], headers=out["headers"])
 
     def _msamb(self, request: httpx.Request) -> httpx.Response:
         """Fake MSAMB: the grid needs the page's session cookie and starts in Marathi."""

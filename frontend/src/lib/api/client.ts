@@ -9,6 +9,7 @@ import type {
   DocumentExplanation,
   FarmerProfile,
   FarmerProfileInput,
+  Health,
   LabelReading,
   Lang,
   MandiPrices,
@@ -17,6 +18,8 @@ import type {
   Season,
   SellAdvice,
   SellAdviceRequest,
+  ShareRequest,
+  ShareResult,
   SoilReport,
   VoiceContext,
   VoiceResponse,
@@ -141,6 +144,8 @@ function form(fields: Record<string, string | Blob | number | boolean | undefine
 // ---- Endpoints -----------------------------------------------------------
 
 export const api = {
+  getHealth: () => request<Health>('GET', '/health'),
+
   getFarmer: () => request<FarmerProfile>('GET', '/farmer/me'),
   putFarmer: (profile: FarmerProfileInput) => request<FarmerProfile>('PUT', '/farmer/me', { json: profile }),
   deleteFarmer: () => request<DeleteResult>('DELETE', '/farmer/me'),
@@ -175,6 +180,8 @@ export const api = {
 
   matchSchemes: (answers: SchemeAnswers, lang: Lang) =>
     request<SchemeMatch>('POST', '/schemes/match', { json: { answers, lang } }),
+  /** opt-in only; the backend redacts and forwards to the cloud */
+  shareScheme: (body: ShareRequest) => request<ShareResult>('POST', '/schemes/share', { json: body }),
 }
 
 export type Api = typeof api
