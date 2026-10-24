@@ -1,5 +1,6 @@
 import { round2 } from '@/lib/api/queries'
 import type { FarmerProfile, FarmerProfileInput, Irrigation, Lang } from '@/lib/api/types'
+import type { GlyphName } from './glyphs'
 
 /**
  * The onboarding question flow as data: which questions, in what order, the
@@ -21,7 +22,7 @@ export const ONBOARDING_VERSION = 2
 
 export interface QuestionDef {
   id: QuestionId
-  emoji: string
+  glyph: GlyphName
   /** optional questions show "Skip" */
   optional: boolean
   /** single-choice questions move on by themselves after a tap */
@@ -29,41 +30,41 @@ export interface QuestionDef {
 }
 
 export const QUESTIONS: QuestionDef[] = [
-  { id: 'lang', emoji: '🙏', optional: false, autoAdvance: false },
-  { id: 'name', emoji: '👋', optional: false, autoAdvance: false },
-  { id: 'where', emoji: '📍', optional: false, autoAdvance: false },
-  { id: 'crops', emoji: '🌾', optional: false, autoAdvance: false },
-  { id: 'land', emoji: '📐', optional: false, autoAdvance: false },
-  { id: 'water', emoji: '💧', optional: false, autoAdvance: true },
+  { id: 'lang', glyph: 'globe', optional: false, autoAdvance: false },
+  { id: 'name', glyph: 'person', optional: false, autoAdvance: false },
+  { id: 'where', glyph: 'pin', optional: false, autoAdvance: false },
+  { id: 'crops', glyph: 'sprout', optional: false, autoAdvance: false },
+  { id: 'land', glyph: 'field', optional: false, autoAdvance: false },
+  { id: 'water', glyph: 'water', optional: false, autoAdvance: true },
 ]
 
 /** Index of the summary screen, one past the last question. */
 export const REVIEW = QUESTIONS.length
 
-export interface Opt<T extends string | number = string> {
+export interface Opt<T extends string = string> {
   value: T
-  emoji: string
+  glyph: GlyphName
 }
 
 export const CROPS: Opt[] = [
-  { value: 'onion', emoji: '🧅' },
-  { value: 'soybean', emoji: '🌱' },
-  { value: 'tomato', emoji: '🍅' },
-  { value: 'grapes', emoji: '🍇' },
-  { value: 'cotton', emoji: '🌼' },
-  { value: 'wheat', emoji: '🌾' },
-  { value: 'gram', emoji: '🌰' },
-  { value: 'sugarcane', emoji: '🎋' },
-  { value: 'pomegranate', emoji: '🍎' },
-  { value: 'maize', emoji: '🌽' },
+  { value: 'onion', glyph: 'onion' },
+  { value: 'soybean', glyph: 'soybean' },
+  { value: 'tomato', glyph: 'tomato' },
+  { value: 'grapes', glyph: 'grapes' },
+  { value: 'cotton', glyph: 'cotton' },
+  { value: 'wheat', glyph: 'wheat' },
+  { value: 'gram', glyph: 'gram' },
+  { value: 'sugarcane', glyph: 'sugarcane' },
+  { value: 'pomegranate', glyph: 'pomegranate' },
+  { value: 'maize', glyph: 'maize' },
 ]
 
 export const WATER: Opt<Irrigation>[] = [
-  { value: 'rainfed', emoji: '🌧️' },
-  { value: 'drip', emoji: '💧' },
-  { value: 'sprinkler', emoji: '⛲' },
-  { value: 'canal', emoji: '🏞️' },
-  { value: 'borewell', emoji: '🚰' },
+  { value: 'rainfed', glyph: 'rainfed' },
+  { value: 'drip', glyph: 'drip' },
+  { value: 'sprinkler', glyph: 'sprinkler' },
+  { value: 'canal', glyph: 'canal' },
+  { value: 'borewell', glyph: 'borewell' },
 ]
 
 /** Defaults for what onboarding doesn't ask (water can be skipped; the tank is set in Settings). */

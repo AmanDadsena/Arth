@@ -7,7 +7,7 @@ import { useVoice } from '@/components/voice'
 
 /**
  * Application details, fillable by voice. A value heard by voice is
- * "unconfirmed" until the farmer taps ✅; ✏️ turns it into a normal input.
+ * "unconfirmed" until the farmer taps the tick; the pencil turns it into a normal input.
  * There is no applications endpoint: saving shows a ready state with the
  * official website, and nothing leaves this screen.
  */
@@ -98,7 +98,7 @@ function FieldRow({
               aria-label={t('confirmAria', { field: label })}
               className="flex h-12 min-w-12 items-center justify-center gap-1.5 rounded-[18px] bg-grow px-3 text-[15px] font-semibold text-white"
             >
-              <span aria-hidden>✅</span>
+              <Icon name="check" size={18} />
               <span className="hidden min-[400px]:inline">{t('confirmField')}</span>
             </button>
             <button
@@ -107,7 +107,7 @@ function FieldRow({
               aria-label={t('editAria', { field: label })}
               className="flex h-12 min-w-12 items-center justify-center gap-1.5 rounded-[18px] bg-card px-3 text-[15px] font-semibold text-ink"
             >
-              <span aria-hidden>✏️</span>
+              <Icon name="edit" size={18} />
               <span className="hidden min-[400px]:inline">{t('editField')}</span>
             </button>
           </div>

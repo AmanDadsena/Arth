@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Icon, IconButton } from '@/components/ui'
+import { Glyph, type GlyphName } from './glyphs'
 
 /** Building blocks shared by every question screen. */
 
@@ -55,11 +56,11 @@ export function StepTransition({ stepKey, dir, children }: { stepKey: number; di
   )
 }
 
-export function QuestionHead({ emoji, title, why, eyebrow }: { emoji: string; title: string; why: string; eyebrow?: string }) {
+export function QuestionHead({ glyph, title, why, eyebrow }: { glyph: GlyphName; title: string; why: string; eyebrow?: string }) {
   return (
     <div className="pt-7">
-      <span aria-hidden className="flex h-14 w-14 items-center justify-center rounded-full bg-card text-[30px] leading-none">
-        {emoji}
+      <span aria-hidden className="flex h-14 w-14 items-center justify-center rounded-[20px] bg-grow text-white shadow-[0_8px_18px_-8px_rgba(46,107,63,.6)]">
+        <Glyph name={glyph} size={32} />
       </span>
       {eyebrow ? <div className="mt-5 text-[15px] font-semibold text-grow">{eyebrow}</div> : null}
       <h1 tabIndex={-1} className={`display text-[30px] leading-[1.15] text-ink outline-none ${eyebrow ? 'mt-1' : 'mt-5'}`}>
@@ -70,12 +71,12 @@ export function QuestionHead({ emoji, title, why, eyebrow }: { emoji: string; ti
   )
 }
 
-/** A full-width answer row: big emoji (or swatch), label, optional hint, tick. */
+/** A full-width answer row: a line icon (or swatch), label, optional hint, tick. */
 export function OptionRow({
   on,
   multi = false,
   onClick,
-  emoji,
+  glyph,
   swatch,
   label,
   hint,
@@ -84,7 +85,7 @@ export function OptionRow({
   on: boolean
   multi?: boolean
   onClick: () => void
-  emoji?: string
+  glyph?: GlyphName
   swatch?: string
   label: ReactNode
   hint?: ReactNode
@@ -103,9 +104,9 @@ export function OptionRow({
     >
       {swatch ? (
         <span aria-hidden className="h-11 w-11 flex-none rounded-full ring-4 ring-chip" style={{ background: swatch }} />
-      ) : emoji ? (
-        <span aria-hidden className={`flex h-11 w-11 flex-none items-center justify-center rounded-full text-[24px] leading-none ${on ? 'bg-card' : 'bg-chip'}`}>
-          {emoji}
+      ) : glyph ? (
+        <span aria-hidden className={`flex h-11 w-11 flex-none items-center justify-center rounded-2xl ${on ? 'bg-grow text-white' : 'bg-grow-l text-grow-d'}`}>
+          <Glyph name={glyph} size={28} />
         </span>
       ) : null}
       <span className="min-w-0 flex-1">
@@ -117,8 +118,8 @@ export function OptionRow({
   )
 }
 
-/** A square tile for grids (crops, goals): emoji on top, label below. */
-export function OptionTile({ on, onClick, emoji, label }: { on: boolean; onClick: () => void; emoji: string; label: ReactNode }) {
+/** A square tile for grids (crops): a line drawing on top, label below. */
+export function OptionTile({ on, onClick, glyph, label }: { on: boolean; onClick: () => void; glyph: GlyphName; label: ReactNode }) {
   return (
     <button
       type="button"
@@ -129,8 +130,8 @@ export function OptionTile({ on, onClick, emoji, label }: { on: boolean; onClick
         on ? 'bg-grow-l text-grow-d ring-2 ring-inset ring-grow' : 'bg-card text-ink active:bg-chip'
       }`}
     >
-      <span aria-hidden className="text-[38px] leading-none">
-        {emoji}
+      <span aria-hidden className={`flex h-16 w-16 items-center justify-center rounded-full transition ${on ? 'bg-grow text-white' : 'bg-grow-l text-grow-d'}`}>
+        <Glyph name={glyph} size={38} />
       </span>
       <span className="text-[17px] font-semibold leading-tight">{label}</span>
       <span className="absolute right-2.5 top-2.5">

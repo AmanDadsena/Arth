@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, Icon } from '@/components/ui'
 import { LANGS, useLang } from '@/i18n'
 import { CROPS, DEFAULTS, QUESTIONS, districtLabel, isAnswered, type Draft, type QuestionId } from './model'
+import { Glyph, type GlyphName } from './glyphs'
 
 /**
  * Everything the farmer said, as rows. Tapping a row jumps back to that question.
@@ -14,15 +15,15 @@ const GROUPS: { id: 'you' | 'farm'; rows: QuestionId[] }[] = [
   { id: 'farm', rows: ['crops', 'land', 'water'] },
 ]
 
-const emojiOf = (id: QuestionId) => QUESTIONS.find((q) => q.id === id)!.emoji
-const emojiFor = (opts: { value: string; emoji: string }[], v: string | undefined) => opts.find((o) => o.value === v)?.emoji
+const glyphOf = (id: QuestionId) => QUESTIONS.find((q) => q.id === id)!.glyph
+const glyphFor = (opts: { value: string; glyph: GlyphName }[], v: string | undefined) => opts.find((o) => o.value === v)?.glyph
 
 export function Review({ draft, onJump, editing }: { draft: Draft; onJump: (id: QuestionId) => void; editing: boolean }) {
   const { t } = useTranslation('onboarding')
   const { t: tc } = useTranslation('common')
   const { lang } = useLang()
 
-  function value(id: QuestionId): { text: ReactNode; emoji?: string; tone?: 'needed' | 'quiet' } {
+  function value(id: QuestionId): { text: ReactNode; glyph?: GlyphName; tone?: 'needed' | 'quiet' } {
     const answered = isAnswered(id, draft)
     switch (id) {
       case 'lang':
@@ -32,7 +33,7 @@ export function Review({ draft, onJump, editing }: { draft: Draft; onJump: (id: 
       case 'where':
         return answered ? { text: `${draft.village.trim()}, ${districtLabel(draft.district, lang)}` } : { text: t('review.needed'), tone: 'needed' }
       case 'crops':
-        return answered ? { text: draft.crops.map((c) => tc(`crops.${c}`)).join(', '), emoji: emojiFor(CROPS, draft.crops[0]) } : { text: t('review.needed'), tone: 'needed' }
+        return answered ? { text: draft.crops.map((c) => tc(`crops.${c}`)).join(', '), glyph: glyphFor(CROPS, draft.crops[0]) } : { text: t('review.needed'), tone: 'needed' }
       case 'land':
         return answered
           ? {
@@ -54,8 +55,8 @@ export function Review({ draft, onJump, editing }: { draft: Draft; onJump: (id: 
 
   return (
     <div className="pt-7">
-      <span aria-hidden className="flex h-14 w-14 items-center justify-center rounded-full bg-card text-[30px] leading-none">
-        {editing ? '✏️' : '🌅'}
+      <span aria-hidden className="flex h-14 w-14 items-center justify-center rounded-[20px] bg-grow text-white">
+        <Glyph name={editing ? 'edit' : 'sunrise'} size={28} />
       </span>
       <h1 tabIndex={-1} className="display mt-5 text-[30px] leading-[1.15] text-ink outline-none">
         {editing ? t('review.editTitle') : t('review.title', { name: draft.name.trim() || '' })}
@@ -77,8 +78,8 @@ export function Review({ draft, onJump, editing }: { draft: Draft; onJump: (id: 
                   onClick={() => onJump(id)}
                   className={`flex min-h-[64px] w-full items-center gap-3.5 px-4 py-3 text-left active:bg-chip ${i ? 'border-t border-hair' : ''}`}
                 >
-                  <span aria-hidden className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-chip text-[20px] leading-none">
-                    {v.emoji ?? emojiOf(id)}
+                  <span aria-hidden className="flex h-10 w-10 flex-none items-center justify-center rounded-2xl bg-grow-l text-grow-d">
+                    <Glyph name={v.glyph ?? glyphOf(id)} size={21} />
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-[13px] font-medium text-faint">{t(`row.${id}`)}</span>

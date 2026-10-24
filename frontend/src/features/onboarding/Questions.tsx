@@ -20,7 +20,7 @@ export function QuestionBody(props: QuestionProps) {
   const { q, draft, set, pick } = props
   const { t } = useTranslation('onboarding')
   const { t: tc } = useTranslation('common')
-  const head = <QuestionHead emoji={q.emoji} title={t(`q.${q.id}.title`)} why={t(`q.${q.id}.why`)} eyebrow={q.id === 'lang' ? t('welcome') : undefined} />
+  const head = <QuestionHead glyph={q.glyph} title={t(`q.${q.id}.title`)} why={t(`q.${q.id}.why`)} eyebrow={q.id === 'lang' ? t('welcome') : undefined} />
 
   switch (q.id) {
     case 'lang':
@@ -66,7 +66,7 @@ export function QuestionBody(props: QuestionProps) {
           <MultiHint />
           <div role="group" aria-label={t(`q.${q.id}.title`)} className="mt-3 grid grid-cols-2 gap-2.5">
             {CROPS.map((c) => (
-              <OptionTile key={c.value} emoji={c.emoji} label={tc(`crops.${c.value}`)} on={draft.crops.includes(c.value)} onClick={() => set({ crops: toggle(draft.crops, c.value) })} />
+              <OptionTile key={c.value} glyph={c.glyph} label={tc(`crops.${c.value}`)} on={draft.crops.includes(c.value)} onClick={() => set({ crops: toggle(draft.crops, c.value) })} />
             ))}
           </div>
         </>
@@ -86,7 +86,7 @@ export function QuestionBody(props: QuestionProps) {
           {head}
           <Group label={t(`q.${q.id}.title`)}>
             {WATER.map((w) => (
-              <OptionRow key={w.value} emoji={w.emoji} label={tc(`irrigation.${w.value}`)} hint={t(`waterHint.${w.value}`)} on={draft.irrigation === w.value} onClick={() => pick({ irrigation: w.value })} />
+              <OptionRow key={w.value} glyph={w.glyph} label={tc(`irrigation.${w.value}`)} hint={t(`waterHint.${w.value}`)} on={draft.irrigation === w.value} onClick={() => pick({ irrigation: w.value })} />
             ))}
           </Group>
         </>
