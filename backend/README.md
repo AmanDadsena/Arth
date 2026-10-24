@@ -1,135 +1,201 @@
-# Arth backend
+# Arth Backend Service
 
-FastAPI service for the Arth PWA. It implements every endpoint in [docs/SPEC.md](../docs/SPEC.md) §3
-(the same paths and camelCase JSON as `frontend/src/lib/api/client.ts`). AI runs **locally** on
-**Gemma 4 E2B through Ollama**, so photos, voice and documents never leave the machine.
+> **FastAPI backend service powering Arth (अर्थ) with local AI inference (Gemma 4 native vision & audio), zero-disk media processing, and privacy-first encrypted storage.**
 
-## Run it
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg?logo=fastapi&logoColor=white)](app/)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-3776ab.svg?logo=python&logoColor=white)](pyproject.toml)
+[![Tests](https://img.shields.io/badge/Tests-176%20passing-brightgreen.svg)](tests/)
+[![AI](https://img.shields.io/badge/LLM-Gemma_4_E2B_via_Ollama-orange.svg)](https://ollama.com)
+[![STT](https://img.shields.io/badge/STT-Gemma_4_Native_%2B_faster--whisper-blue.svg)](app/stt.py)
+[![Security](https://img.shields.io/badge/Storage-AES--256--GCM-success.svg)](app/db.py)
 
-Requirements: Python 3.11–3.14, [Ollama](https://ollama.com), ~8 GB GPU recommended.
+---
+
+## Overview
+
+The Arth backend implements the full API contract specified in [docs/SPEC.md](../docs/SPEC.md) §3. It communicates with the frontend via typed, camelCase JSON endpoints.
+
+All visual and speech AI runs **locally** on **Gemma 4 E2B via Ollama** (with native audio processing via PyAV and faster-whisper as a fallback), guaranteeing that farmers' photos, voice clips, and documents are processed purely in-memory and never leave the host machine.
+
+### Design Philosophy
+> **"The model reads and explains; Python decides."**  
+> Gemma 4 extracts fields from images and documents as schema-validated JSON. All critical agricultural math — sprayer tank dilution rates (`services/dose.py`), scheme eligibility rules (`services/schemes.py`), spray weather advisories (`services/weather.py`), and market net profitability (`services/mandi.py`) — is executed by pure, deterministic Python code. When confidence is low ($< 0.60$) or an image is degraded, the service flags `escalate: true` to refer the farmer to the Kisan Call Centre (`1800-180-1551`).
+
+---
+
+## Backend Architecture Flow
+
+```mermaid
+flowchart TD
+    Req["Incoming HTTP Request\n(Bearer Token / Multipart Media)"] --> RateLimit["Token-Bucket Rate Limiter\n(10 rps / 20 burst)"]
+    
+    subgraph Security["🛡️ Security & Auth Verification"]
+        RateLimit --> SecHeaders["Security Headers Injection\n(CSP, nosniff, DENY)"]
+        SecHeaders --> AuthCheck{"Authentication Mode"}
+        AuthCheck -- "Production" --> FirebaseJWT["Verify Firebase RS256 JWT\n(Google JWKS Cache)"]
+        AuthCheck -- "Local Dev" --> DevBypass["Dev Auth / Demo Bypass\n(ARTH_AUTH_DISABLED=true)"]
+        FirebaseJWT --> UIDExtract["Extract UID strictly from 'sub' claim"]
+        DevBypass --> UIDExtract
+    end
+
+    subgraph Sanitization["🔒 In-Memory Sanitization (Zero Disk Writes)"]
+        UIDExtract --> MediaCheck{"Is Multipart Request?"}
+        MediaCheck -- "Image Upload" --> ImagePipe["Sniff Magic Bytes\nDecompression-bomb Guard\nPillow Strip EXIF & GPS\nDownscale ≤ 1024px"]
+        MediaCheck -- "Audio Upload" --> AudioPipe["PyAV In-Memory Resampler\nConvert to 16kHz WAV\nCap 2MB / 15s"]
+        MediaCheck -- "JSON / Query" --> PIIScrub["PII Redaction Filter\n(Aadhaar Verhoeff Checksum,\nPAN, IFSC, Account, Phone)"]
+        ImagePipe --> PIIScrub
+        AudioPipe --> PIIScrub
+    end
+
+    subgraph Perception["🧠 Local AI Perception Layer"]
+        PIIScrub --> RouteDispatch{"Route Dispatch"}
+        RouteDispatch -- "/ai/voice" --> GemmaAudio["Gemma 4 Native Audio STT\n(~0.5s per clip warm)"]
+        GemmaAudio -.->|Fallback| Whisper["faster-whisper (CPU STT)"]
+        RouteDispatch -- "/ai/crop-doctor\n/ai/label-reader\n/ai/explain-document" --> Ollama["Ollama Gemma 4 E2B\n(Vision & Extraction)"]
+        GemmaAudio --> PIIFilterOut["PII Filter on Transcript"]
+        Whisper --> PIIFilterOut
+        PIIFilterOut --> Ollama
+        Ollama --> SchemaValidation["Pydantic JSON Schema Validation"]
+    end
+
+    subgraph BusinessLogic["⚙️ Deterministic Logic (Python Rules)"]
+        SchemaValidation --> ConfidenceGate{"Confidence ≥ 0.60\n& Photo Valid?"}
+        ConfidenceGate -- "No / Blurry" --> Escalate["escalate: true\n(Route to Kisan Call Centre)"]
+        ConfidenceGate -- "Yes" --> PythonEngines["Execute Domain Engine:\n- dose.py: Tank dose per capacity\n- mandi.py: Net profit = Price - Transport\n- schemes.py: Evaluate schemes.json rules\n- weather.py: Spray & heat advisories"]
+        RouteDispatch -- "/brief, /weather,\n/mandi, /calendar" --> PythonEngines
+    end
+
+    subgraph Storage["💾 Persistence & External APIs"]
+        PythonEngines <--> SQLite["SQLite DB\n(AES-256-GCM Row-bound Profiles,\nHMAC-indexed, 30-day History TTL)"]
+        PythonEngines <--> OpenMeteo["Open-Meteo (Forecasts & Geocoding)"]
+        PythonEngines <--> Agmarknet["data.gov.in (Agmarknet Mandi Rates)"]
+    end
+
+    PythonEngines --> Response["Format camelCase JSON\nCache-Control: no-store"]
+    Escalate --> Response
+```
+
+---
+
+## API Endpoints Summary
+
+| Endpoint | Method | Description | Processing Model |
+| :--- | :---: | :--- | :--- |
+| `/api/farmer/me` | `GET` | Retrieve encrypted farmer profile | AES-256-GCM decrypted SQLite fetch |
+| `/api/farmer/me` | `PUT` | Create or update farmer profile | AES-256-GCM sealed row keyed by HMAC(UID) |
+| `/api/farmer/me` | `DELETE` | Erase profile and all history records | Atomic deletion of profile + history (30-day TTL) |
+| `/api/brief` | `GET` | Today's prioritized tasks (*Aaj Ka Kaam*) | Aggregates weather advisories, mandi alerts, calendar |
+| `/api/weather` | `GET` | 7-day forecast & agricultural advisories | Open-Meteo API (15-min cache) + spray rule engine |
+| `/api/mandi/prices` | `GET` | Nearby APMC prices and 30-day trend | data.gov.in Agmarknet API + local trend tracking |
+| `/api/mandi/sell-advice` | `POST` | Net profitability calculation | Net = $(\text{Price} \times \text{Qty}) - \text{Transport}$; Gemma explains |
+| `/api/ai/crop-doctor` | `POST` | Disease diagnosis from leaf photo | Gemma 4 Vision $\to$ symptoms/treatments; fallback escalation |
+| `/api/ai/label-reader` | `POST` | Pesticide dose per sprayer tank | Gemma extracts label text; Python computes tank dose |
+| `/api/ai/explain-document`| `POST` | Plain-language document summary | PII redaction $\to$ Gemma explains; requires `consent=true` |
+| `/api/ai/voice` | `POST` | Trilingual voice assistant | Gemma 4 Native Audio $\to$ PII scrub $\to$ Gemma intent extractor |
+| `/api/calendar` | `GET` | Crop calendar & weekly task timeline | Rule-based matching against soil, irrigation, and season |
+| `/api/schemes/match` | `POST` | Government scheme eligibility matching | Evaluates farmer criteria against rules in `schemes.json` |
+| `/api/health` | `GET` | Service & Ollama model health check | Verifies Ollama connectivity and model loading |
+
+---
+
+## Local Setup & Execution
+
+### Prerequisites
+- **Python:** 3.11 – 3.14
+- **[Ollama](https://ollama.com):** Installed with Gemma 4 E2B:
+  ```bash
+  ollama pull gemma4:e2b
+  ```
+- **GPU:** ~8 GB VRAM recommended for fast inference (runs on CPU as fallback).
+
+### Installation Steps
+
+1. **Set Up Python Environment:**
+   ```bash
+   cd backend
+   python -m venv .venv
+   
+   # Activate environment
+   # Windows (PowerShell):
+   .venv\Scripts\Activate.ps1
+   # macOS / Linux:
+   source .venv/bin/activate
+
+   # Install package in editable mode with test dependencies
+   pip install -e ".[dev]"
+   ```
+
+2. **Configure Environment Variables:**
+   ```bash
+   cp .env.example .env
+   ```
+   Edit `.env` to configure desired authentication mode:
+   - **For local dev without Firebase:** Set `ARTH_AUTH_DISABLED=true` (accepted only when `ARTH_ENV=development`).
+   - **For real Firebase sign-in:** Set `ARTH_FIREBASE_PROJECT_ID=<your-project-id>`.
+   - **For live mandi data:** Set `ARTH_DATA_GOV_IN_KEY=<your-api-key>` (free from data.gov.in).
+
+3. **Start the FastAPI Server:**
+   ```bash
+   uvicorn app.main:app_factory --factory --port 8000 --reload
+   ```
+
+4. **Connect the Frontend:**
+   In `frontend/.env.local`:
+   ```bash
+   VITE_USE_MOCKS=false
+   VITE_DEV_SIGN_IN=true   # if running with ARTH_AUTH_DISABLED=true
+   VITE_API_BASE_URL=      # leave blank to use the Vite /api proxy
+   ```
+   When you run `npm run dev` in `frontend/`, all requests to `/api` are automatically proxied to `http://localhost:8000`.
+
+---
+
+## Security & Privacy Architecture
+
+- **Firebase JWT Verification (`auth.py`):**  
+  Follows Firebase specification: RS256 algorithm pinning, Google's public keys fetched via JWKS and cached with `Cache-Control` awareness (and cached to disk for offline resilience). User identity is read **only** from the cryptographically verified `sub` claim.
+- **Sealed Storage (`db.py`):**  
+  Farmer profiles are encrypted with **AES-256-GCM** using row-bound associated data. Database primary keys use an HMAC hash of the UID, making raw user IDs absent from database tables.
+- **In-Memory Media Lifecyle (`media.py` & `stt.py`):**  
+  Uploaded images and audio files are never written to disk or S3. Images are sniffed by magic bytes, protected against decompression bombs, stripped of all EXIF/GPS tags via Pillow, and re-encoded. Audio is converted to 16 kHz mono WAV in memory via PyAV and decoded strictly in RAM.
+- **Aadhaar & PII Redaction (`pii.py`):**  
+  Detects and replaces Aadhaar numbers (verified via **Verhoeff checksum** algorithm), Indian mobile numbers, PAN numbers, IFSC codes, bank account numbers, and email addresses with masked identifiers (`XXXX-XXXX-1234`).
+- **HTTP Hardening (`middleware.py`):**  
+  - Token-bucket rate limiter ($10\text{ rps}$, burst of $20$).
+  - Strict Content Security Policy (CSP), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`.
+  - Sensitive routes enforce `Cache-Control: no-store`.
+  - Body size caps enforced at both `Content-Length` and streamed byte reader levels.
+
+---
+
+## Testing & Code Quality
+
+The backend test suite contains **176 automated tests** that run without requiring an active Ollama instance or external network access (all network calls and model responses are mocked with realistic fixtures):
 
 ```bash
-ollama pull gemma4:e2b
+# Run full test suite
+pytest
+
+# Run tests with coverage summary
+pytest --cov=app
+
+# Run linter and security checks
+ruff check .
 ```
 
-```bash
-cd backend
-python -m venv .venv
-.venv/Scripts/activate        # Windows (Git Bash); on macOS/Linux: source .venv/bin/activate
-pip install -e ".[dev]"
-cp .env.example .env          # then fill in ARTH_FIREBASE_PROJECT_ID (or ARTH_AUTH_DISABLED=true for local dev)
-uvicorn app.main:app_factory --factory --port 8000
-```
+---
 
-Connect the frontend: in `frontend/.env.local` set `VITE_USE_MOCKS=false` and leave
-`VITE_API_BASE_URL` empty. `npm run dev` proxies `/api` to this server, so the browser sees one
-origin. With the Firebase values set, sign-in is real Google sign-in. Without them, set
-`VITE_DEV_SIGN_IN=true` here and `ARTH_AUTH_DISABLED=true` in `backend/.env` to sign in locally
-(development builds only; the backend refuses this in production).
-Interactive API docs: http://localhost:8000/docs (development only).
+## Data Sources & Licenses
 
-```bash
-pytest          # 176 tests, no network or model needed
-ruff check .    # lint + security rules
-```
+| Dependency / Service | License / Usage | Role in Arth |
+| :--- | :--- | :--- |
+| **Gemma 4 E2B** (Google DeepMind) | Apache-2.0 via Ollama | Visual disease diagnosis, label extraction, document explanation, native audio |
+| **PyAV** | BSD-3-Clause | In-memory audio decoding and resampling |
+| **faster-whisper** | MIT | Speech-to-Text transcription fallback |
+| **FastAPI / Pydantic / Uvicorn** | MIT | High-performance asynchronous REST API framework |
+| **Cryptography** | Apache-2.0 / BSD | AES-256-GCM row-bound database encryption |
+| **Pillow** | HPND (MIT-CMU) | In-memory image sanitization, EXIF scrubbing, and resizing |
+| **Open-Meteo** | CC BY 4.0 | Real-time weather forecasting and reverse geocoding |
+| **Agmarknet via data.gov.in** | Government Open Data License – India | Daily mandi arrival prices across Maharashtra APMCs |
 
-## How it works
-
-```
-React PWA ──HTTPS + Firebase ID token──▶ FastAPI
-                                          ├─ auth.py        verify Google-signed JWT, uid from `sub` only
-                                          ├─ middleware.py  rate limit, size cap, security headers
-                                          ├─ media.py       sniff + re-encode images (EXIF/GPS dropped)
-                                          ├─ stt.py         Gemma 4 native audio → text (faster-whisper as fallback)
-                                          ├─ llm.py ───────▶ Ollama · Gemma 4 E2B (local, JSON schema output)
-                                          ├─ pii.py         Aadhaar (Verhoeff) / PAN / IFSC / account / phone / email
-                                          ├─ services/      dose · schemes · calendar · weather · mandi · brief
-                                          └─ db.py ────────▶ SQLite (AES-256-GCM sealed profiles)
-                                   Open-Meteo (weather, geocoding) · data.gov.in Agmarknet (mandi prices)
-```
-
-**The model reads and explains; Python decides.** Gemma extracts fields from photos and voice as
-schema-validated JSON. Doses (`services/dose.py`), scheme eligibility (`services/schemes.py`,
-rules in `app/data/schemes.json`), spray advisories, crop suitability and sell decisions are
-plain, unit-tested code. When a value is missing or confidence is below 0.6 the response sets
-`escalate: true` and the app shows the Kisan Call Centre (1800-180-1551) instead of a guess.
-
-| Endpoint | What runs |
-|---|---|
-| `GET/PUT/DELETE /farmer/me` | Encrypted profile; delete also wipes history |
-| `GET /brief` | Weather + mandi + calendar rules → 2–3 actions (parallel, each source optional) |
-| `GET /weather` | Open-Meteo 7-day forecast, cached 15 min, spray/heat advisories |
-| `GET /mandi/prices` | Agmarknet prices, stored for the 30-day trend, distances from geocoding |
-| `POST /mandi/sell-advice` | Net = price × qty − transport; Gemma only explains |
-| `POST /ai/crop-doctor` | Gemma vision → diagnosis; low confidence escalates |
-| `POST /ai/label-reader` | Gemma copies label values → Python computes the dose for your tank |
-| `POST /ai/explain-document` | Gemma explains; every string PII-redacted; needs `consent=true` |
-| `POST /ai/voice` | Gemma 4 audio → redacted transcript → Gemma intent; routes/fields whitelisted |
-| `GET /calendar`, `POST /schemes/match` | Rules over JSON data, no model |
-
-## Security and privacy
-
-- **Auth:** Firebase ID tokens verified per Firebase's spec: RS256 only (algorithm pinned),
-  Google's rotating public keys (cached per `Cache-Control`, and on disk for offline use),
-  `aud`/`iss` = your project, `exp`/`iat`/`auth_time` checked, `sub` 1–128 chars.
-  The UID is never read from a body or query. `ARTH_AUTH_DISABLED` exists for local
-  development only and the app refuses to start with it in production.
-- **Storage:** profiles sealed with AES-256-GCM (row-bound with associated data); rows keyed by
-  HMAC of the UID, never the UID itself; history holds redacted summaries only and expires after
-  30 days; `DELETE /farmer/me` removes everything in one transaction.
-- **Media:** never written to disk. Images are type-sniffed from bytes, size-capped,
-  decompression-bomb guarded, re-encoded (drops EXIF/GPS and trailing payloads) and downscaled.
-  Audio is type-sniffed, capped at 2 MB and 15 s, decoded in memory.
-- **What the model sees:** the photo or a redacted transcript, crop, language and numbers.
-  Never name, phone, UID or address. Model output is validated against a schema and redacted.
-- **HTTP:** CORS allowlist (no cookies), token-bucket rate limit (10 rps, burst 20), body
-  cap enforced on Content-Length *and* streamed bytes, `nosniff` / `DENY` / CSP / no-referrer
-  headers, `Cache-Control: no-store` on personal data, one error shape that never echoes input,
-  docs and OpenAPI disabled outside development.
-- **Logs:** method, path, status and time only. No bodies, query strings, tokens or keys
-  (`httpx` URL logging is silenced because the data.gov.in key is a query parameter).
-
-## Google sign-in (Firebase)
-
-Backend (this repo): set `ARTH_FIREBASE_PROJECT_ID`. No service account or secret is needed:
-ID tokens are verified with Google's public keys.
-
-Frontend (`frontend/`, owned by the frontend lead), when they wire it in:
-1. Firebase console → create project → Authentication → Sign-in method → enable **Google**.
-   Add `localhost` and the deployed domain under Authorized domains.
-2. Project settings → Your apps → Web app → copy the config into `frontend/.env.local` as
-   `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`,
-   `VITE_FIREBASE_APP_ID` (public by design, but keep `.env.local` out of git).
-3. `npm i firebase`; in `AuthProvider`, sign in with `signInWithPopup(auth, new GoogleAuthProvider())`
-   and register `registerTokenGetter(() => auth.currentUser?.getIdToken() ?? null)` from
-   `src/lib/session.ts`. The SDK refreshes the one-hour token automatically.
-4. Add `https://apis.google.com https://*.firebaseapp.com https://securetoken.googleapis.com
-   https://identitytoolkit.googleapis.com` to the CSP in `security-headers.json`.
-
-## Data sources and licenses
-
-| Component | License |
-|---|---|
-| Gemma 4 E2B (Google DeepMind), via Ollama | Apache-2.0 (model), MIT (Ollama) |
-| PyAV (audio decoding) | BSD-3-Clause |
-| faster-whisper + Whisper weights (optional STT fallback) | MIT |
-| FastAPI, Pydantic, Uvicorn, PyJWT, Ruff, pytest | MIT |
-| httpx, python-multipart | BSD-3-Clause / Apache-2.0 |
-| cryptography | Apache-2.0 / BSD |
-| Pillow | MIT-CMU (HPND) |
-| SQLite | Public domain |
-| Open-Meteo forecast + geocoding | Data CC BY 4.0, free non-commercial API |
-| Agmarknet prices via data.gov.in | Government Open Data License – India (free API key) |
-
-Scheme rules and crop calendar are simplified **demo data**: farmers should confirm on the
-official portal or with the nearest KVK. Transport cost in sell advice is an estimate
-(`ARTH_TRANSPORT_RS_PER_QUINTAL_KM`).
-
-## Notes for the team
-
-- The data.gov.in mandi resource (`9ef84268-…`) returns *today's* prices; the trend fills in as
-  the backend runs each day. Field names follow the published dataset (`state, district,
-  market, commodity, arrival_date dd/mm/yyyy, min_price, max_price, modal_price`). If your key
-  returns no rows, check the filter names in `services/mandi.py::_refresh`.
-- Swap the model with `ARTH_MODEL` (e.g. `gemma4:e4b` for higher accuracy on 8 GB+ GPUs). `/api/health` reports
-  whether it is loaded.
+For overall project documentation, see the [Root README](../README.md).
