@@ -99,12 +99,13 @@ def test_gemma_stt_sends_16k_wav_and_language():
     seen = {}
 
     class FakeLLM:
-        async def transcribe(self, wav_b64, lang_name, timeout_s):
-            seen.update(wav=base64.b64decode(wav_b64), lang=lang_name, timeout=timeout_s)
+        async def transcribe(self, wav_b64, lang_name, timeout_s, hints=None):
+            seen.update(wav=base64.b64decode(wav_b64), lang=lang_name, timeout=timeout_s, hints=hints)
             return "आज कांद्याचा भाव काय आहे"
 
-    text = asyncio.run(GemmaSTT(FakeLLM(), 15.5).transcribe(tone_wav(1.0), "mr"))
+    text = asyncio.run(GemmaSTT(FakeLLM(), 15.5).transcribe(tone_wav(1.0), "mr", ["निफाड"]))
     assert text == "आज कांद्याचा भाव काय आहे"
     assert seen["lang"] == "Marathi" and seen["timeout"] <= 10
+    assert seen["hints"] == ["निफाड"]
     with wave.open(io.BytesIO(seen["wav"])) as w:
         assert w.getframerate() == 16000

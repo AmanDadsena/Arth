@@ -117,15 +117,23 @@ class LLM:
                 ]
         raise ApiError(502, "ai_bad_output", "The assistant could not read this clearly. Please try again.")
 
-    async def transcribe(self, wav_b64: str, lang_name: str, timeout_s: float) -> str:
+    async def transcribe(self, wav_b64: str, lang_name: str, timeout_s: float,
+                         hints: list[str] | None = None) -> str:
         """Speech to text with Gemma's own audio input (plain text out, no schema).
 
         Ollama takes audio in the same `images` list as pictures; we always send
-        16 kHz mono WAV, converted in memory by stt.py.
+        16 kHz mono WAV, converted in memory by stt.py. `hints` are spellings of
+        names the speaker is likely to say (their own village and district).
         """
         deadline = time.monotonic() + timeout_s
+        system = prompt("transcribe")
+        if hints:
+            # Live findings: without this "Niphad" came out as "Navad"; with the names in the
+            # user turn instead, Gemma appended them to clips that never said them.
+            system += ("\nSpelling list (use only to spell a name the speaker actually says; "
+                       "never add these words if they are not spoken): " + ", ".join(hints) + ".")
         messages = [
-            {"role": "system", "content": prompt("transcribe")},
+            {"role": "system", "content": system},
             {"role": "user", "content": f"The speaker uses {lang_name}.", "images": [wav_b64]},
         ]
         return (await self._chat(messages, None, 0.0, deadline)).strip()

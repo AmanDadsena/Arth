@@ -5,6 +5,7 @@ service, return a typed model. The UID always comes from the verified token.
 
 import json
 import logging
+import unicodedata
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Form, Query, Request, UploadFile
@@ -184,8 +185,23 @@ async def explain_document(request: Request, user: Auth, image: UploadFile | Non
     return result
 
 
+def _place_hints(profile: dict | None) -> list[str]:
+    """The farmer's own village and district, so speech recognition spells them right.
+    They go only to the local model, never into a log or a reply."""
+    if not profile:
+        return []
+    names = (str(profile.get(k) or "").strip() for k in ("village", "district"))
+    return [n for n in dict.fromkeys(names) if _is_place_name(n)]
+
+
+def _is_place_name(n: str) -> bool:
+    # Letters (Devanagari vowel signs are marks, not letters), spaces and . - ' only:
+    # no digits and no instruction-like text can reach the model.
+    return 0 < len(n) <= 40 and all(c.isalpha() or unicodedata.category(c)[0] == "M" or c in " .-'" for c in n)
+
+
 @router.post("/ai/voice", response_model=VoiceResponse)
-async def voice(request: Request, _: Auth, audio: UploadFile | None = File(None), lang: Lang = Form("mr"),
+async def voice(request: Request, user: Auth, audio: UploadFile | None = File(None), lang: Lang = Form("mr"),
                 context: str = Form("{}", max_length=2000)):
     try:
         ctx = VoiceContext.model_validate_json(context or "{}")
@@ -193,7 +209,7 @@ async def voice(request: Request, _: Auth, audio: UploadFile | None = File(None)
         raise ApiError(400, "invalid_context", "context must be JSON {screen, formFields?}") from None
     s = request.app.state
     raw = await media.read_audio(audio, s.settings.max_audio_bytes)
-    transcript = await s.stt.transcribe(raw, lang)
+    transcript = await s.stt.transcribe(raw, lang, _place_hints(_db(request).get_profile(user.uid)))
     del raw  # processed in memory and discarded
     return await ai.voice(s.llm, transcript, lang, ctx.screen, ctx.form_fields)
 

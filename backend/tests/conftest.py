@@ -219,8 +219,9 @@ class FakeSTT:
     async def load(self):
         return None
 
-    async def transcribe(self, audio_bytes: bytes, lang: str) -> str:
+    async def transcribe(self, audio_bytes: bytes, lang: str, hints: list[str] | None = None) -> str:
         self.calls += 1
+        self.hints = hints
         return self.text
 
 
