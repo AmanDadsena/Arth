@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { SpeakButton, sentences, useReadAloudOnce } from '@/components/voice'
 import { useTranslation } from 'react-i18next'
 import { useMutation } from '@tanstack/react-query'
 import { AiTag, Button, Card, Chip, EscalateCard, EyebrowLabel, ErrorState, Icon, ImagePicker, PageHeader, type PickedImage } from '@/components/ui'
@@ -193,8 +194,24 @@ function DocumentResult({ d, onAnother }: { d: DocumentExplanation; onAnother: (
   const unreadable = !d.summary.trim() && !d.keyPoints.length && !d.nextSteps.length
   const deadlines = [...d.deadlines].sort((a, b) => a.date.localeCompare(b.date))
 
+  // Voice-first: type, summary, dates and steps, as shown. Hidden numbers stay hidden.
+  const { lang } = useLang()
+  const [resultId] = useState(() => `${Date.now()}-${Math.random()}`)
+  const spoken = unreadable
+    ? sentences(t('unclearTitle'), t('unclearBody'))
+    : sentences(
+        d.docType,
+        d.summary,
+        ...deadlines.map((dl) => `${dl.label}: ${fmtDate(dl.date, lang, { day: 'numeric', month: 'long', year: 'numeric' })}`),
+        d.nextSteps.length > 0 && `${t('nextSteps')}: ${d.nextSteps.join('. ')}`,
+      )
+  useReadAloudOnce(resultId, spoken, lang)
+
   return (
     <>
+      <div className="mt-3 flex justify-end">
+        <SpeakButton text={spoken} lang={lang} />
+      </div>
       {d.redactedFields.length ? (
         <div className="mt-3">
           <div className="mx-1 text-[13px] font-semibold text-grow-d">{t('hiddenTitle')}</div>

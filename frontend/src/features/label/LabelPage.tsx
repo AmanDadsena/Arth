@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { SpeakButton, sentences, useReadAloudOnce } from '@/components/voice'
 import { useTranslation } from 'react-i18next'
 import { useMutation } from '@tanstack/react-query'
 import { AiTag, BigValue, Button, Card, Chip, EscalateCard, EyebrowLabel, ErrorState, Icon, ImagePicker, PageHeader, type PickedImage } from '@/components/ui'
@@ -167,8 +168,25 @@ function LabelResult({ r, onReadAnother }: { r: LabelReading; onReadAnother: () 
     t('checkReason')
   ) : null
 
+  // Voice-first: what is on screen, in the farmer's language. Never a number we didn't show.
+  const { lang } = useLang()
+  const [resultId] = useState(() => `${Date.now()}-${Math.random()}`)
+  const spoken = sentences(
+    r.productName,
+    dose && `${t('dose')}: ${fmtAmount(dose.amount)} ${t(`unit.${dose.unit}`)}`,
+    dose && t('doseFor', { n: r.tankSizeLitres }),
+    !r.dosePerTank ? `${t('noDose')}. ${t('noDoseReason')}` : doubtful ? `${t('unclearTitle')}. ${t('unclearReason')}` : r.escalate && t('checkReason'),
+    r.waitingPeriodDays != null ? t('harvestAfter', { n: r.waitingPeriodDays }) : t('waitingUnknown'),
+    r.warnings.length > 0 && `${t('warnings')}: ${r.warnings.slice(0, 2).join('. ')}`,
+    r.safety.length > 0 && `${t('safety')}: ${r.safety.slice(0, 2).join('. ')}`,
+  )
+  useReadAloudOnce(resultId, spoken, lang)
+
   return (
     <>
+      <div className="mt-3 flex justify-end">
+        <SpeakButton text={spoken} lang={lang} />
+      </div>
       <Card className="mt-3 px-5 py-4">
         <EyebrowLabel>{t('product')}</EyebrowLabel>
         <h2 className="display mt-1 break-words text-[26px] leading-tight text-ink">{r.productName}</h2>
