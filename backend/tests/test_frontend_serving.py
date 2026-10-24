@@ -75,3 +75,14 @@ def test_only_the_api_is_rate_limited(make_client, dist):
 def test_no_build_no_app(client):
     assert client.get("/").status_code == 404
     assert client.get("/api/farmer/me", headers=auth()).status_code == 404  # no profile yet: API unaffected
+
+
+def test_real_page_policy_allows_google_sign_in():
+    """Live finding: script-src 'self' blocked apis.google.com, so the sign-in popup never finished."""
+    from pathlib import Path
+    real = Path(__file__).resolve().parents[2] / "frontend" / "security-headers.json"
+    csp = {d.split()[0]: d.split()[1:] for d in
+           json.loads(real.read_text(encoding="utf-8"))["Content-Security-Policy"].split("; ")}
+    assert "https://apis.google.com" in csp["script-src"]
+    assert "https://*.firebaseapp.com" in csp["frame-src"]
+    assert any("googleapis.com" in s for s in csp["connect-src"])
