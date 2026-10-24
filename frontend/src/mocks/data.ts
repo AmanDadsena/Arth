@@ -222,6 +222,13 @@ export function mandiPrices(commodity: string, lat: number, lon: number): MandiP
 
 const TRANSPORT_PER_KM_PER_QTL = 2.5
 
+const CROP_NAME: Record<string, T3> = {
+  onion: { en: 'onion', hi: 'प्याज़', mr: 'कांद्या' },
+  soybean: { en: 'soybean', hi: 'सोयाबीन', mr: 'सोयाबीन' },
+  tomato: { en: 'tomato', hi: 'टमाटर', mr: 'टोमॅटो' },
+  grapes: { en: 'grapes', hi: 'अंगूर', mr: 'द्राक्षा' },
+}
+
 export function sellAdvice(req: SellAdviceRequest): SellAdvice {
   const prices = mandiPrices(req.commodity, req.lat, req.lon)
   const options = prices.markets
@@ -240,12 +247,13 @@ export function sellAdvice(req: SellAdviceRequest): SellAdvice {
   const slope = COMMODITY[req.commodity]?.slope ?? 0
   const wait = slope >= 20
   const lang = req.lang
+  const crop = (l: Lang) => (CROP_NAME[req.commodity] ? L(CROP_NAME[req.commodity]!, l) : req.commodity)
   const reasoning = wait
     ? L(
         {
-          en: `Prices for ${req.commodity} have risen about ₹${slope} per quintal every day this week. Waiting 5–7 days could add roughly ₹${slope * 6 * req.quantityQuintals}. If your crop can't wait, ${best.market} gives the best net today.`,
-          hi: `इस हफ्ते ${req.commodity} का भाव रोज़ लगभग ₹${slope} प्रति क्विंटल बढ़ा है। 5–7 दिन रुकने से लगभग ₹${slope * 6 * req.quantityQuintals} ज़्यादा मिल सकते हैं। अगर माल रुक नहीं सकता, तो आज ${best.market} में सबसे अच्छा शुद्ध दाम है।`,
-          mr: `या आठवड्यात ${req.commodity} चा भाव रोज सुमारे ₹${slope} प्रति क्विंटल वाढला आहे. 5–7 दिवस थांबल्यास सुमारे ₹${slope * 6 * req.quantityQuintals} जास्त मिळू शकतात. माल थांबू शकत नसेल तर आज ${best.market} मध्ये सर्वात चांगला निव्वळ दर आहे.`,
+          en: `Prices for ${crop('en')} have risen about ₹${slope} per quintal every day this week. Waiting 5–7 days could add roughly ₹${slope * 6 * req.quantityQuintals}. If your crop can't wait, ${best.market} gives the best net today.`,
+          hi: `इस हफ्ते ${crop('hi')} का भाव रोज़ लगभग ₹${slope} प्रति क्विंटल बढ़ा है। 5–7 दिन रुकने से लगभग ₹${slope * 6 * req.quantityQuintals} ज़्यादा मिल सकते हैं। अगर माल रुक नहीं सकता, तो आज ${best.market} में सबसे अच्छा शुद्ध दाम है।`,
+          mr: `या आठवड्यात ${crop('mr')}चा भाव रोज सुमारे ₹${slope} प्रति क्विंटल वाढला आहे. 5–7 दिवस थांबल्यास सुमारे ₹${slope * 6 * req.quantityQuintals} जास्त मिळू शकतात. माल थांबू शकत नसेल तर आज ${best.market} मध्ये सर्वात चांगला निव्वळ दर आहे.`,
         },
         lang,
       )

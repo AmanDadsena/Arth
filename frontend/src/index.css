@@ -200,3 +200,7 @@ body {
   }
   .tagline { transition: none; }
 }
+
+/* Wide letter-spacing splits Devanagari conjuncts apart ("आ म चा"), so the
+   eyebrow tracking used across the app only applies to English. */
+html:not([lang="en"]) [class*="tracking-["] { letter-spacing: 0.01em !important; }
