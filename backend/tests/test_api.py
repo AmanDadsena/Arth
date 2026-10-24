@@ -534,8 +534,8 @@ def test_onboarded_version_round_trip(client):
 
 
 def test_water_sources_round_trip(client):
-    p = client.put("/api/farmer/me", json={**PROFILE, "irrigation": "drip", "waterSources": ["rainfed", "drip", "drip"]},
-                   headers=A).json()
+    body = {**PROFILE, "irrigation": "drip", "waterSources": ["rainfed", "drip", "drip"]}
+    p = client.put("/api/farmer/me", json=body, headers=A).json()
     assert p["waterSources"] == ["rainfed", "drip"]
     assert p["irrigation"] == "drip"
     assert "waterSources" not in client.put("/api/farmer/me", json=PROFILE, headers=A).json()
