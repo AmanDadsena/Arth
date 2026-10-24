@@ -1,4 +1,4 @@
-import { http } from 'msw'
+import { http, passthrough } from 'msw'
 import { env } from '@/lib/env'
 import { resolveMock } from './resolve'
 
@@ -30,10 +30,15 @@ const ROUTES: [keyof typeof http, string][] = [
 
 // Match only API calls under the base URL — a bare `*/weather` would also
 // catch the browser loading the /weather page itself.
-export const handlers = ROUTES.map(([method, path]) => {
-  const make = http[method] as typeof http.get
-  return make(`${env.apiBaseUrl}${path}`, async ({ request }) => {
-    const url = new URL(request.url)
-    return resolveMock(request.method, path + url.search, await readBody(request))
-  })
-})
+export const handlers = [
+  ...ROUTES.map(([method, path]) => {
+    const make = http[method] as typeof http.get
+    return make(`${env.apiBaseUrl}${path}`, async ({ request }) => {
+      const url = new URL(request.url)
+      return resolveMock(request.method, path + url.search, await readBody(request))
+    })
+  }),
+  // the resolver's own live-data calls go straight to the network
+  http.get('https://api.open-meteo.com/*', () => passthrough()),
+  http.get('https://api.data.gov.in/*', () => passthrough()),
+]
