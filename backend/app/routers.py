@@ -38,7 +38,7 @@ from .schemas import (
     Weather,
     round_coord,
 )
-from .services import ai, brief, calendar, insights, schemes
+from .services import ai, alerts, brief, calendar, insights, schemes
 from .services import mandi as mandi_svc
 from .services import weather as weather_svc
 
@@ -99,8 +99,11 @@ def delete_farmer(request: Request, user: Auth):
 @router.get("/brief", response_model=Brief)
 async def get_brief(request: Request, user: Auth, lang: Lang = "mr"):
     s = request.app.state
-    return await brief.build(http=s.http, mandi=s.mandi, profile=_profile(request, user), lang=lang,
-                             timeout=s.settings.http_timeout_s)
+    profile = _profile(request, user)
+    community = alerts.nearby_alerts(s.db, profile.get("district"), lang, profile.get("crops", []),
+                                     s.settings.pest_alert_min_farmers)
+    return await brief.build(http=s.http, mandi=s.mandi, profile=profile, lang=lang,
+                             timeout=s.settings.http_timeout_s, community=community)
 
 
 @router.get("/weather", response_model=Weather)
@@ -148,8 +151,13 @@ async def crop_doctor(request: Request, user: Auth, image: UploadFile | None = F
                       lang: Lang = Form("mr"), crop: str | None = Form(None, max_length=32)):
     s = request.app.state
     img = await media.prepare_image(image, s.settings.max_image_bytes, s.settings.image_max_side)
-    result = await ai.diagnose(s.llm, img, lang, crop)
+    result, signal = await ai.diagnose(s.llm, img, lang, crop)
     s.db.add_history(user.uid, "crop_doctor", f"{crop or '-'}: {result.diagnosis}")
+    if signal:
+        district = alerts.norm_district((s.db.get_profile(user.uid) or {}).get("district"))
+        if district:  # no district on the profile: nothing to compare with neighbours
+            s.db.add_pest_report(user.uid, district, alerts.norm_crop(crop), signal.pest_key, signal.name_en,
+                                 signal.name_local, lang)
     return result
 
 

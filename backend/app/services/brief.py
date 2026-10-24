@@ -11,20 +11,7 @@ from ..errors import ApiError
 from ..schemas import ActionItem, Brief, Lang, PriceAlert, ToolCallLog, WeatherDay
 from . import calendar, weather
 from .mandi import MandiService
-
-CROP_NAMES = {
-    "onion": {"en": "onion", "hi": "प्याज़", "mr": "कांदा"},
-    "tomato": {"en": "tomato", "hi": "टमाटर", "mr": "टोमॅटो"},
-    "grapes": {"en": "grapes", "hi": "अंगूर", "mr": "द्राक्ष"},
-    "soybean": {"en": "soybean", "hi": "सोयाबीन", "mr": "सोयाबीन"},
-    "wheat": {"en": "wheat", "hi": "गेहूँ", "mr": "गहू"},
-    "gram": {"en": "gram", "hi": "चना", "mr": "हरभरा"},
-    "cotton": {"en": "cotton", "hi": "कपास", "mr": "कापूस"},
-    "potato": {"en": "potato", "hi": "आलू", "mr": "बटाटा"},
-    "pomegranate": {"en": "pomegranate", "hi": "अनार", "mr": "डाळिंब"},
-    "sugarcane": {"en": "sugarcane", "hi": "गन्ना", "mr": "ऊस"},
-    "maize": {"en": "maize", "hi": "मक्का", "mr": "मका"},
-}
+from .names import crop_name
 
 T = {
     "greet": {"en": "Namaste, {n}", "hi": "नमस्ते {n}", "mr": "नमस्कार {n}"},
@@ -51,10 +38,6 @@ T = {
 }
 SELL_ALERT_PCT = 3.0
 _PRIORITY = {"high": 0, "medium": 1, "low": 2}
-
-
-def crop_name(crop: str, lang: Lang) -> str:
-    return CROP_NAMES.get(crop, {}).get(lang, crop)
 
 
 async def _timed(log: list[ToolCallLog], name: str, args: dict, coro):
@@ -84,7 +67,7 @@ def weather_actions(days: list[WeatherDay], lang: Lang) -> list[ActionItem]:
 
 
 async def build(*, http, mandi: MandiService, profile: dict, lang: Lang, timeout: float,
-                today: date | None = None) -> Brief:
+                today: date | None = None, community: list[ActionItem] | None = None) -> Brief:
     today = today or weather.today_ist()
     lat, lon = profile["lat"], profile["lon"]
     crops: list[str] = profile.get("crops", [])[:3]
@@ -126,6 +109,9 @@ async def build(*, http, mandi: MandiService, profile: dict, lang: Lang, timeout
                                   route="/calendar", title=T["sow_title"][lang].format(c=r.name, to=r.sowing_window.to),
                                   detail=T["sow_detail"][lang]))
 
+    if community is not None:
+        actions.extend(community)  # nearby pest outbreaks (services/alerts.py)
+        tools.append(ToolCallLog(name="get_nearby_pest_reports", args={"district": profile.get("district")}, ms=0))
     actions.sort(key=lambda a: _PRIORITY[a.priority])
     first = (profile.get("name") or "").split(" ")[0]
     return Brief(greeting=T["greet"][lang].format(n=first).strip(" ,"), date=today.isoformat(), weather=days,

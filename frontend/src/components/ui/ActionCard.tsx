@@ -25,7 +25,7 @@ const TYPE_ICON: Record<ActionItem['type'], IconName> = {
   scheme: 'schemes',
 }
 
-const SOURCE_ICON: Record<ActionItem['source'], IconName> = { weather: 'weather', mandi: 'mandi', calendar: 'calendar' }
+const SOURCE_ICON: Record<ActionItem['source'], IconName> = { weather: 'weather', mandi: 'mandi', calendar: 'calendar', community: 'pin' }
 
 interface ActionCardProps {
   title: ReactNode

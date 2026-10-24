@@ -137,7 +137,7 @@ class ActionItem(ApiModel):
     priority: Priority
     title: str
     detail: str
-    source: Literal["weather", "mandi", "calendar"]
+    source: Literal["weather", "mandi", "calendar", "community"]
     route: str | None
 
 

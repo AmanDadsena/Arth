@@ -8,6 +8,8 @@ Safety rules applied here, after the model, so they hold whatever it says:
   before the model sees it.
 """
 
+import re
+from dataclasses import dataclass
 from datetime import date
 from typing import Literal
 
@@ -109,6 +111,7 @@ async def read_label(llm: LLM, image_b64: str, lang: Lang, tank_litres: float, c
 class _DoctorOut(BaseModel):
     diagnosis: str = Field(max_length=120)
     scientific_name: str | None = Field(default=None, max_length=120)
+    common_name_en: str | None = Field(default=None, max_length=80)
     confidence: float
     severity: Literal["low", "medium", "high"]
     symptoms: list[str] = Field(default_factory=list, max_length=6)
@@ -117,11 +120,30 @@ class _DoctorOut(BaseModel):
     unsure: bool = False
 
 
-async def diagnose(llm: LLM, image_b64: str, lang: Lang, crop: str | None) -> CropDiagnosis:
+@dataclass(frozen=True)
+class PestSignal:
+    """What a confident diagnosis contributes to nearby outbreak alerts."""
+    pest_key: str  # normalised scientific name: the same in every language
+    name_en: str | None
+    name_local: str
+
+
+def pest_key(scientific_name: str | None) -> str | None:
+    """'Alternaria porri (purple blotch)' -> 'alternaria porri'. None if unusable."""
+    name = _text(scientific_name)
+    if not name:
+        return None
+    words = re.sub(r"\(.*?\)", " ", name).lower()
+    key = " ".join(re.sub(r"[^a-z\s]", " ", words).split()[:2])
+    return key if len(key) >= 3 else None
+
+
+async def diagnose(llm: LLM, image_b64: str, lang: Lang, crop: str | None
+                   ) -> tuple[CropDiagnosis, PestSignal | None]:
     request = f"{_lang_line(lang)}\nCrop (from the farmer): {crop or 'not specified'}."
     out = await llm.structured("crop_doctor", _DoctorOut, user_text=request, images=[image_b64])
     confidence = _clamp01(out.confidence)
-    return CropDiagnosis(
+    result = CropDiagnosis(
         diagnosis=out.diagnosis,
         scientific_name=_text(out.scientific_name),
         confidence=round(confidence, 2),
@@ -134,6 +156,10 @@ async def diagnose(llm: LLM, image_b64: str, lang: Lang, crop: str | None) -> Cr
         escalate=out.unsure or confidence < ESCALATE_BELOW or not [s for s in out.symptoms if _text(s)],
         model=llm.label,
     )
+    # Only confident, symptom-backed diagnoses feed community alerts; guesses never do.
+    key = None if result.escalate else pest_key(out.scientific_name)
+    signal = PestSignal(key, _text(out.common_name_en), out.diagnosis[:120]) if key else None
+    return result, signal
 
 
 # --- Explain a document ---------------------------------------------------------

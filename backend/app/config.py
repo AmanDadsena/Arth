@@ -53,6 +53,9 @@ class Settings(BaseSettings):
     # 32-byte key, base64. Generated into data_dir on first run if empty.
     data_key: str = ""
     history_ttl_days: int = 30
+    # Community pest alerts appear only once this many different farmers in a district
+    # report the same pest within 7 days (privacy threshold, k-anonymity style).
+    pest_alert_min_farmers: int = Field(default=3, ge=2)
 
     # --- External data ---
     data_gov_in_api_key: str = ""

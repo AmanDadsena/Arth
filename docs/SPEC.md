@@ -120,7 +120,7 @@ interface ActionItem {
   priority: Priority
   title: string
   detail: string
-  source: 'weather' | 'mandi' | 'calendar'
+  source: 'weather' | 'mandi' | 'calendar' | 'community' // community: outbreaks reported by ≥3 farmers in the district this week
   route: string | null           // in-app route for the CTA, e.g. '/mandi'
 }
 interface PriceAlert {

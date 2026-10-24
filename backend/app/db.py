@@ -53,6 +53,19 @@ CREATE TABLE IF NOT EXISTS prices (
     modal_price  INTEGER NOT NULL,
     PRIMARY KEY (commodity, market, arrival_date)
 );
+CREATE TABLE IF NOT EXISTS pest_reports (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    uid_hash    TEXT NOT NULL,
+    district    TEXT NOT NULL,
+    crop        TEXT NOT NULL,
+    pest_key    TEXT NOT NULL,
+    name_en     TEXT,
+    name_local  TEXT,
+    lang        TEXT NOT NULL,
+    created_at  TEXT NOT NULL,
+    expires_at  TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS pest_area ON pest_reports(district, created_at);
 CREATE TABLE IF NOT EXISTS geocodes (
     place TEXT PRIMARY KEY,
     lat   REAL,
@@ -143,6 +156,7 @@ class Database:
             self._conn.execute("BEGIN")
             try:
                 self._conn.execute("DELETE FROM history WHERE uid_hash=?", (h,))
+                self._conn.execute("DELETE FROM pest_reports WHERE uid_hash=?", (h,))
                 self._conn.execute("DELETE FROM profiles WHERE uid_hash=?", (h,))
                 self._conn.execute("COMMIT")
             except Exception:
@@ -175,7 +189,56 @@ class Database:
 
     def purge_expired(self) -> int:
         with self._lock:
-            return self._conn.execute("DELETE FROM history WHERE expires_at<=?", (now_iso(),)).rowcount
+            n = self._conn.execute("DELETE FROM history WHERE expires_at<=?", (now_iso(),)).rowcount
+            return n + self._conn.execute("DELETE FROM pest_reports WHERE expires_at<=?", (now_iso(),)).rowcount
+
+    # --- community pest reports ----------------------------------------------
+    # Only district, crop and pest are kept (no name, village or coordinates), keyed by
+    # the same HMAC'd uid so one farmer counts once per pest per week and "Delete my
+    # data" removes their reports. Reports expire with the history TTL.
+
+    def add_pest_report(self, uid: str, district: str, crop: str, pest_key: str, name_en: str | None,
+                        name_local: str | None, lang: str, now: datetime | None = None) -> bool:
+        """Store a confident diagnosis. False if this farmer already reported it this week."""
+        now = now or datetime.now(UTC)
+        h = self.uid_hash(uid)
+        week_ago = (now - timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        with self._lock:
+            dup = self._conn.execute(
+                "SELECT 1 FROM pest_reports WHERE uid_hash=? AND pest_key=? AND crop=? AND created_at>? LIMIT 1",
+                (h, pest_key, crop, week_ago)).fetchone()
+            if dup:
+                return False
+            self._conn.execute(
+                """INSERT INTO pest_reports(uid_hash, district, crop, pest_key, name_en, name_local, lang,
+                   created_at, expires_at) VALUES (?,?,?,?,?,?,?,?,?)""",
+                (h, district, crop, pest_key, name_en, name_local, lang, now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                 (now + self._ttl).strftime("%Y-%m-%dT%H:%M:%SZ")))
+        return True
+
+    def pest_outbreaks(self, district: str, since: datetime, min_farmers: int) -> list[dict]:
+        """Pests reported by at least `min_farmers` different farmers in a district since `since`.
+
+        The threshold is the privacy guard: below it nothing is shown, so a single
+        farmer's report can never be singled out.
+        """
+        rows = self._x(
+            """SELECT crop, pest_key, COUNT(DISTINCT uid_hash) AS farmers, MAX(created_at) AS last_seen
+               FROM pest_reports WHERE district=? AND created_at>=?
+               GROUP BY crop, pest_key HAVING COUNT(DISTINCT uid_hash) >= ?
+               ORDER BY farmers DESC, last_seen DESC""",
+            (district, since.strftime("%Y-%m-%dT%H:%M:%SZ"), min_farmers))
+        return [dict(r) for r in rows]
+
+    def pest_names(self, district: str, crop: str, pest_key: str, lang: str) -> tuple[str | None, str | None]:
+        """Most recent (name in `lang`, English name) for a pest, for display."""
+        local = self._x(
+            """SELECT name_local FROM pest_reports WHERE district=? AND crop=? AND pest_key=? AND lang=?
+               AND name_local IS NOT NULL ORDER BY created_at DESC LIMIT 1""", (district, crop, pest_key, lang))
+        en = self._x(
+            """SELECT name_en FROM pest_reports WHERE district=? AND crop=? AND pest_key=? AND name_en IS NOT NULL
+               ORDER BY created_at DESC LIMIT 1""", (district, crop, pest_key))
+        return (local[0]["name_local"] if local else None), (en[0]["name_en"] if en else None)
 
     # --- public market data ---------------------------------------------------
 

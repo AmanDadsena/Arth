@@ -5,7 +5,8 @@ Look at the photo of the crop and identify the most likely disease, pest or defi
 
 Rules:
 - Write diagnosis, symptoms, treatment and prevention in the requested language, in short simple sentences.
-- scientific_name: the pathogen or pest's Latin name if you are confident, else null.
+- scientific_name: the pathogen or pest's Latin name (genus and species) if you are confident, else null.
+- common_name_en: its common English name (e.g. "Purple blotch", "Onion thrips") if you are confident, else null.
 - confidence: 0 to 1. Use below 0.6 when the photo is unclear, shows no plant, or several problems look alike.
 - severity: low, medium or high based on how much of the visible plant is affected.
 - treatment.organic: practical non-chemical steps.

@@ -63,7 +63,7 @@ export interface ActionItem {
   priority: Priority
   title: string
   detail: string
-  source: 'weather' | 'mandi' | 'calendar'
+  source: 'weather' | 'mandi' | 'calendar' | 'community' // community = pest reports from farmers nearby
   route: string | null
 }
 
