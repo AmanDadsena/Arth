@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Arth">
+  <!-- Full-bleed version of logo.svg for maskable / home-screen icons: the platform rounds the corners; the mark sits in the 80% safe zone. -->
+  <rect width="512" height="512" fill="#2E6B3F"/>
+  <g transform="translate(51.2 51.2) scale(.8)">
+  <circle cx="256" cy="228" r="124" fill="#E8B04B"/>
+  <circle cx="256" cy="228" r="104" fill="none" stroke="#C98F2E" stroke-width="6" stroke-dasharray="2 14" stroke-linecap="round"/>
+  <g fill="none" stroke="#E9E5DA" stroke-linecap="round">
+    <path d="M92 382 Q256 330 420 382" stroke-width="22"/>
+    <path d="M120 428 Q256 388 392 428" stroke-width="18" opacity=".8"/>
+    <path d="M156 466 Q256 438 356 466" stroke-width="14" opacity=".6"/>
+  </g>
+  <path d="M256 356 V196" stroke="#1F4A2B" stroke-width="16" stroke-linecap="round"/>
+  <path d="M256 268 C232 214 190 196 150 204 C160 252 204 282 256 268 Z" fill="#245231"/>
+  <path d="M256 224 C276 160 322 136 370 142 C362 200 314 236 256 224 Z" fill="#5C9A62"/>
+  <path d="M250 262 C224 238 196 222 164 210 M262 220 C292 192 322 170 356 152" stroke="#E9E5DA" stroke-width="4" stroke-linecap="round" opacity=".45"/>
+  </g>
+</svg>
