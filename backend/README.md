@@ -2,14 +2,14 @@
 
 FastAPI service for the Arth PWA. It implements every endpoint in [docs/SPEC.md](../docs/SPEC.md) §3
 (the same paths and camelCase JSON as `frontend/src/lib/api/client.ts`). AI runs **locally** on
-**Gemma 4 E4B through Ollama**, so photos, voice and documents never leave the machine.
+**Gemma 4 E2B through Ollama**, so photos, voice and documents never leave the machine.
 
 ## Run it
 
 Requirements: Python 3.11–3.14, [Ollama](https://ollama.com), ~8 GB GPU recommended.
 
 ```bash
-ollama pull gemma4:e4b
+ollama pull gemma4:e2b
 ```
 
 ```bash
@@ -41,7 +41,7 @@ React PWA ──HTTPS + Firebase ID token──▶ FastAPI
                                           ├─ middleware.py  rate limit, size cap, security headers
                                           ├─ media.py       sniff + re-encode images (EXIF/GPS dropped)
                                           ├─ stt.py         faster-whisper (CPU) speech → text
-                                          ├─ llm.py ───────▶ Ollama · Gemma 4 E4B (local, JSON schema output)
+                                          ├─ llm.py ───────▶ Ollama · Gemma 4 E2B (local, JSON schema output)
                                           ├─ pii.py         Aadhaar (Verhoeff) / PAN / IFSC / account / phone / email
                                           ├─ services/      dose · schemes · calendar · weather · mandi · brief
                                           └─ db.py ────────▶ SQLite (AES-256-GCM sealed profiles)
@@ -110,7 +110,7 @@ Frontend (`frontend/`, owned by the frontend lead), when they wire it in:
 
 | Component | License |
 |---|---|
-| Gemma 4 E4B (Google DeepMind), via Ollama | Apache-2.0 (model), MIT (Ollama) |
+| Gemma 4 E2B (Google DeepMind), via Ollama | Apache-2.0 (model), MIT (Ollama) |
 | faster-whisper + Whisper weights | MIT |
 | FastAPI, Pydantic, Uvicorn, PyJWT, Ruff, pytest | MIT |
 | httpx, python-multipart | BSD-3-Clause / Apache-2.0 |
@@ -130,5 +130,5 @@ official portal or with the nearest KVK. Transport cost in sell advice is an est
   the backend runs each day. Field names follow the published dataset (`state, district,
   market, commodity, arrival_date dd/mm/yyyy, min_price, max_price, modal_price`). If your key
   returns no rows, check the filter names in `services/mandi.py::_refresh`.
-- Swap the model with `ARTH_MODEL` (e.g. `gemma4:e2b` on smaller GPUs). `/api/health` reports
+- Swap the model with `ARTH_MODEL` (e.g. `gemma4:e4b` for higher accuracy on 8 GB+ GPUs). `/api/health` reports
   whether it is loaded.

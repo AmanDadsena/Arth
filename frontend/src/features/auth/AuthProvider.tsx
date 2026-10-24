@@ -118,7 +118,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       provider.setCustomParameters({ prompt: 'select_account' })
       qc.clear()
       setDemo(false)
-      await signInWithPopup(auth, provider) // onIdTokenChanged sets status
+      try {
+        await signInWithPopup(auth, provider) // onIdTokenChanged sets status
+      } catch (err) {
+        // The code (e.g. auth/popup-blocked, auth/unauthorized-domain) says what to fix; it holds no personal data.
+        if (import.meta.env.DEV) console.warn('Google sign-in failed:', (err as { code?: string }).code ?? err)
+        throw err
+      }
       return
     }
     if (env.devSignIn) {

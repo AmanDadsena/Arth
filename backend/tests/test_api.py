@@ -214,7 +214,7 @@ def test_crop_doctor(client, net):
     net.llm_replies.append(DOCTOR_OK)
     r = client.post("/api/ai/crop-doctor", headers=A, files=img(), data={"lang": "en", "crop": "onion"})
     d = r.json()
-    assert r.status_code == 200 and d["escalate"] is False and d["model"] == "gemma-4-e4b"
+    assert r.status_code == 200 and d["escalate"] is False and d["model"] == "gemma-4-e2b"
     req = net.llm_requests[-1]
     assert req["format"]["type"] == "object" and req["messages"][1]["images"]
     assert r.headers["cache-control"] == "no-store"

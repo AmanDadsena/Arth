@@ -36,8 +36,8 @@ class Settings(BaseSettings):
 
     # --- Local AI (Gemma 4 through Ollama) ---
     ollama_url: str = "http://127.0.0.1:11434"
-    model: str = "gemma4:e4b"
-    model_label: str = "gemma-4-e4b"
+    model: str = "gemma4:e2b"
+    model_label: str = "gemma-4-e2b"
     llm_timeout_s: float = 18.0  # frontend aborts /ai/* at 20 s
     llm_max_concurrency: int = 2  # one laptop GPU; more just queues inside Ollama
     llm_num_ctx: int = 8192
