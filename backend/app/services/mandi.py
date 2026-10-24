@@ -380,16 +380,26 @@ class MandiService:
         markets = sorted(markets, key=lambda m: m.distance_km)[:12]
         markets.sort(key=lambda m: -m.modal_price)
 
-        # Trend for the nearest market (where a farmer would usually sell).
-        nearest = min(markets, key=lambda m: m.distance_km)
-        series = self.db.price_series(commodity, nearest.market, (date.today() - timedelta(days=30)).isoformat())
-        trend = [PricePoint(date=s["arrival_date"], modal_price=s["modal_price"]) for s in series]
+        # Trend for the nearest market (where a farmer would usually sell) that traded on at
+        # least two days. Live finding: off-season grapes near Niphad had one day at the
+        # nearest market, which showed as "0.0%" (steady) when it really meant "no data".
+        since30 = (date.today() - timedelta(days=30)).isoformat()
+        by_distance = sorted(markets, key=lambda m: m.distance_km)
+        trend_market, trend = by_distance[0].market, []
+        for m in by_distance:
+            series = [PricePoint(date=s["arrival_date"], modal_price=s["modal_price"])
+                      for s in self.db.price_series(commodity, m.market, since30)]
+            if not trend:
+                trend = series  # the nearest market's, if no market has two days
+            if len(series) >= 2:
+                trend_market, trend = m.market, series
+                break
         return MandiPrices(
             commodity=commodity,
             as_of=max(m.arrival_date for m in markets),
             markets=markets,
             trend=trend,
-            trend_market=nearest.market,
+            trend_market=trend_market,
             change_pct7d=change_pct(trend, days=7),
         )
 

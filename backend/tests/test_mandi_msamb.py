@@ -133,3 +133,20 @@ def test_expired_session_is_set_up_again(make_client, net):
     net.msamb_english = False  # the site reset the session's language
     r = client.get("/api/mandi/prices", params={"commodity": "tomato", **q}, headers=A)
     assert r.status_code == 200 and {m["market"] for m in r.json()["markets"]} == {"Lasalgaon", "Pune", "Yeola"}
+
+
+def test_trend_skips_a_market_with_one_day(make_client, net):
+    """Live finding: off-season grapes had one day at the nearest market, shown as a "0.0%" change."""
+    client = make_client(data_gov_in_api_key="")
+    q = {"commodity": "onion", "lat": 20.08, "lon": 74.11}
+    client.get("/api/mandi/prices", params=q, headers=A)
+    db = client.app.state.db
+    last = db.price_series("onion", "Lasalgaon", "2000-01-01")[-1]["arrival_date"]
+    db._x("DELETE FROM prices WHERE market='Lasalgaon' AND arrival_date<>?", (last,))
+    p = client.get("/api/mandi/prices", params=q, headers=A).json()
+    assert p["trendMarket"] == "Yeola" and len(p["trend"]) == 8  # next nearest with a real history
+    assert any(m["market"] == "Lasalgaon" for m in p["markets"])  # still listed with today's price
+
+    db._x("DELETE FROM prices WHERE market<>'Lasalgaon'")
+    p = client.get("/api/mandi/prices", params=q, headers=A).json()
+    assert p["trendMarket"] == "Lasalgaon" and len(p["trend"]) == 1 and p["changePct7d"] == 0.0  # nothing better
