@@ -269,6 +269,19 @@ npm run dev
 Open <http://localhost:5173>, choose a language and **Sign in with Google**. `npm run dev`
 proxies `/api` to the backend on port 8000, so the browser sees one origin.
 
+### 4. Demo mode (one app on one address)
+
+```powershell
+.\scripts\demo.ps1     # builds the frontend, then serves app + API at http://localhost:8000
+.\scripts\tunnel.ps1   # optional: a temporary public https:// link for phones
+```
+
+The backend serves `frontend/dist` itself when it exists, with the frontend's own
+`security-headers.json` on every page (the API keeps its stricter headers). The offline
+service worker works here, unlike under `npm run dev`. For a tunnel link, add its host
+under Firebase → Authentication → Settings → **Authorized domains**, or Google sign-in
+fails there; the host changes each time the tunnel restarts.
+
 ### Rebuilding the district data (optional)
 
 ```bash

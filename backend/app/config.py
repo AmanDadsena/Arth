@@ -64,6 +64,10 @@ class Settings(BaseSettings):
     transport_rs_per_quintal_km: float = 2.0  # assumption, shown to farmer as an estimate
     http_timeout_s: float = 8.0
 
+    # --- Web app (demo mode: the API serves the built frontend on its own origin) ---
+    # Served only when <frontend_dist>/index.html exists (after `npm run build`).
+    frontend_dist: Path = BACKEND_DIR.parent / "frontend" / "dist"
+
     # --- Cloud sync (optional; aws/sync_lambda.py) ---
     # Only anonymous scheme-interest records, and only when the farmer opts in.
     # Server-side only: never put these in a VITE_ variable, the browser bundle is public.
