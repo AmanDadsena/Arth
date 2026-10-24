@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Badge, Button, Card, EmptyState, EscalateCard, EyebrowLabel, Icon } from '@/components/ui'
 import type { SchemeResult } from '@/lib/api/types'
+import { SpeakButton, sentences } from '@/components/voice'
 
 /** Eligible schemes first (green check + reasons), the rest collapsed below. */
 
@@ -173,10 +174,18 @@ export function SchemeResults({
     )
   }
 
+  // Read aloud: how many schemes, then each one's benefit and why the farmer qualifies.
+  const spoken = yes.length
+    ? sentences(t('eligibleCount', { count: yes.length }), ...yes.map((s) => `${s.name}: ${s.benefit}. ${s.reasons[0] ?? ''}`), t('note'))
+    : sentences(t('noneEligibleTitle'), t('noneEligibleBody'))
+
   return (
     <>
+      <div className="mt-4 flex justify-end">
+        <SpeakButton text={spoken} />
+      </div>
       {yes.length ? (
-        <div className="mt-4 rounded-[26px] bg-grow px-5 py-4 text-white">
+        <div className="mt-3 rounded-[26px] bg-grow px-5 py-4 text-white">
           <div className="display text-[24px] leading-tight">{t('eligibleCount', { count: yes.length })}</div>
           <p className="mt-1 text-[14px] leading-snug text-white/80">{t('note')}</p>
         </div>
