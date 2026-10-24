@@ -26,6 +26,7 @@ export const qk = {
   mandiPrices: (commodity: string, lat: number, lon: number) => ['mandi', commodity, lat, lon] as const,
   calendar: (season: string, lang: string) => ['calendar', season, lang] as const,
   soil: (lang: string, lat?: number, lon?: number) => ['soil', lang, lat, lon] as const,
+  health: ['health'] as const,
 }
 
 export function isNotFound(err: unknown) {
@@ -47,6 +48,12 @@ export function useSaveFarmer() {
       void qc.invalidateQueries({ predicate: (q) => q.queryKey[0] !== 'farmer' })
     },
   })
+}
+
+/** Whether this backend can share anonymous records with the cloud (hides the opt-in if not). */
+export function useCloudSync() {
+  const q = useQuery({ queryKey: qk.health, queryFn: api.getHealth, staleTime: 5 * 60_000, retry: false })
+  return q.data?.cloudSync === true
 }
 
 /** Strip server-owned fields before a PUT. */

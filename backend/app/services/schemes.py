@@ -45,6 +45,10 @@ def _load() -> dict:
     return data
 
 
+def scheme_ids() -> set[str]:
+    return {s["id"] for s in _load()["schemes"]}
+
+
 def _holds(cond: dict, answers: dict) -> bool:
     return _OPS[cond["op"]](answers[cond["field"]], cond["value"])
 

@@ -72,5 +72,15 @@
   "savedBody": "Nothing has been sent yet. Open the official website and use these details to apply.",
   "carry": "Carry these documents",
   "backToSchemes": "Back to schemes",
-  "privacyNote": "These details stay on this screen only and are cleared when you leave."
+  "privacyNote": "These details stay on this screen only and are cleared when you leave.",
+  "shareTitle": "Help plan scheme camps (optional)",
+  "shareBody": "Shares only the scheme, your district, crop and land size range. Never your name, village or bank.",
+  "sharing": "Sharing anonymously…",
+  "shareFailed": "Could not share. Nothing was sent.",
+  "shareSent": "Shared anonymously",
+  "shareQueued": "Will be shared when you are online",
+  "shareWhat": "Shared",
+  "landBand": "{{band}} acres",
+  "savedBodyShared": "Your name, village and bank were not sent. Open the official website and use these details to apply.",
+  "privacyNoteShared": "Name, village and bank stay on this screen only. Only the anonymous summary is shared."
 }

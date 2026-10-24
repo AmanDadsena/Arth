@@ -32,13 +32,15 @@ from .schemas import (
     Season,
     SellAdvice,
     SellAdviceRequest,
+    ShareRequest,
+    ShareResult,
     SoilReport,
     VoiceContext,
     VoiceResponse,
     Weather,
     round_coord,
 )
-from .services import ai, brief, calendar, farm, schemes
+from .services import ai, brief, calendar, farm, schemes, sync
 from .services import mandi as mandi_svc
 from .services import weather as weather_svc
 
@@ -64,7 +66,8 @@ def _profile(request: Request, user: User) -> dict:
 
 @router.get("/health")
 async def health(request: Request):
-    return {"ok": True, "model": request.app.state.llm.label, "modelReady": await request.app.state.llm.ready()}
+    s = request.app.state
+    return {"ok": True, "model": s.llm.label, "modelReady": await s.llm.ready(), "cloudSync": s.sync.enabled}
 
 
 # --- farmer profile -------------------------------------------------------------
@@ -230,3 +233,23 @@ def get_soil(request: Request, user: Auth, lat: Lat | None = None, lon: Lon | No
 @router.post("/schemes/match", response_model=SchemeMatch)
 def match_schemes(_: Auth, body: SchemeMatchRequest):
     return schemes.match(body.answers, body.lang)
+
+
+# A farmer can't fill the outbox: 20 unsent records is far more than real use.
+MAX_QUEUED_PER_FARMER = 20
+
+
+@router.post("/schemes/share", response_model=ShareResult)
+async def share_scheme(request: Request, user: Auth, body: ShareRequest):
+    """Opt-in: share anonymous scheme interest with the cloud (services/sync.py)."""
+    s = request.app.state
+    if not s.sync.enabled:
+        raise ApiError(503, "sync_off", "Sharing is not set up on this device")
+    record = sync.build_record(_db(request), user.uid, body)
+    if record is None:
+        raise ApiError(422, "unknown_scheme", "Unknown scheme")
+    if _db(request).outbox_count(user.uid) >= MAX_QUEUED_PER_FARMER:
+        raise ApiError(429, "too_many_queued", "Too many records waiting to sync")
+    _db(request).outbox_add(user.uid, record)
+    sent = await s.sync.flush()
+    return ShareResult(status="sent" if sent else "queued", shared=record)
