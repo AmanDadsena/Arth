@@ -556,3 +556,29 @@ def test_keep_alive_setting_validated(tmp_path):
     with pytest.raises(ValueError):
         make_settings(tmp_path, llm_keep_alive="forever")
     assert make_settings(tmp_path).llm_keep_alive == "4h"
+
+
+def test_voice_hints_the_farmers_own_place_names(client, stt):
+    """Live finding: Gemma wrote "Niphad" as "Navad" unless told how the farmer's village is spelt."""
+    files = {"audio": ("a.webm", b"\x1a\x45\xdf\xa3" + b"\x00" * 100, "audio/webm")}
+    client.post("/api/ai/voice", headers=A, files=files, data={"context": "{}"})
+    assert stt.hints == []  # no profile yet: no hints
+    client.put("/api/farmer/me", json=PROFILE, headers=A)
+    client.post("/api/ai/voice", headers=A, files=files, data={"context": "{}"})
+    assert stt.hints == ["Niphad", "Nashik"]
+    client.put("/api/farmer/me", json={**PROFILE, "village": "Ward 9, call 9876543210"}, headers=A)
+    client.post("/api/ai/voice", headers=A, files=files, data={"context": "{}"})
+    assert stt.hints == ["Nashik"]  # anything that isn't a plain name is left out
+
+
+def test_transcribe_prompt_carries_hints(client, net):
+    llm = client.app.state.llm
+    import asyncio
+    net.llm_replies.append("my name is ramesh, i live in niphad")
+    asyncio.run(llm.transcribe("UklGRg==", "English", 5.0, hints=["Niphad", "Nashik"]))
+    sent = net.llm_requests[-1]["messages"]
+    assert "Niphad, Nashik" in sent[0]["content"] and "never add" in sent[0]["content"]
+    assert sent[1]["content"] == "The speaker uses English."  # names stay out of the user turn
+    net.llm_replies.append("hello")
+    asyncio.run(llm.transcribe("UklGRg==", "English", 5.0))
+    assert "Spelling list" not in net.llm_requests[-1]["messages"][0]["content"]

@@ -59,9 +59,10 @@ class GemmaSTT:
     async def load(self) -> None:
         return None  # the LLM warm-up loads the model, audio included
 
-    async def transcribe(self, audio_bytes: bytes, lang: str) -> str:
+    async def transcribe(self, audio_bytes: bytes, lang: str, hints: list[str] | None = None) -> str:
         wav = await run_in_threadpool(to_wav16k, audio_bytes, self._max_seconds)
-        return await self._llm.transcribe(base64.b64encode(wav).decode(), LANG_NAMES.get(lang, lang), self._timeout)
+        return await self._llm.transcribe(base64.b64encode(wav).decode(), LANG_NAMES.get(lang, lang), self._timeout,
+                                          hints=hints)
 
 
 class WhisperSTT:
@@ -93,7 +94,7 @@ class WhisperSTT:
         if self._model is None:
             await asyncio.shield(self._start_loading())
 
-    def _run(self, audio_bytes: bytes, lang: str) -> str:
+    def _run(self, audio_bytes: bytes, lang: str, hints: list[str] | None) -> str:
         from faster_whisper import decode_audio
         try:
             audio = decode_audio(io.BytesIO(audio_bytes), sampling_rate=SAMPLE_RATE)
@@ -104,14 +105,15 @@ class WhisperSTT:
         if len(audio) < 0.3 * SAMPLE_RATE:
             raise ApiError(400, "audio_too_short", "The recording is too short. Please speak again.")
         segments, _ = self._model.transcribe(audio, language=lang, beam_size=2, vad_filter=True,
-                                             condition_on_previous_text=False)
+                                             condition_on_previous_text=False,
+                                             initial_prompt=", ".join(hints) if hints else None)
         return " ".join(s.text.strip() for s in segments).strip()
 
-    async def transcribe(self, audio_bytes: bytes, lang: str) -> str:
+    async def transcribe(self, audio_bytes: bytes, lang: str, hints: list[str] | None = None) -> str:
         # Never make a farmer wait on a model download: answer at once and keep
         # loading in the background (live finding: a request hung for minutes).
         if self._model is None:
             self._start_loading()
             raise ApiError(503, "stt_loading", "Voice input is getting ready. Please try again in a minute.")
         async with self._lock:
-            return await run_in_threadpool(self._run, audio_bytes, lang)
+            return await run_in_threadpool(self._run, audio_bytes, lang, hints)
