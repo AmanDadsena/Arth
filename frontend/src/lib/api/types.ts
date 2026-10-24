@@ -29,6 +29,13 @@ export interface FarmerProfile {
   irrigation: Irrigation
   tankSizeLitres: number
   consentAt: string | null
+  // basic questions asked right after sign-in — all optional, older profiles lack them
+  experienceYears?: number
+  landOwnership?: 'own' | 'lease' | 'both'
+  farmingType?: 'conventional' | 'organic' | 'mixed'
+  goals?: string[] // 'more_yield' | 'better_price' | 'less_cost' | 'save_water' | 'schemes' | 'organic'
+  sellsAt?: string[] // 'mandi' | 'trader' | 'fpo' | 'direct' | 'contract'
+  livestock?: string[] // 'cow' | 'buffalo' | 'goat' | 'poultry' | 'none'
   createdAt?: string
   updatedAt?: string
 }
@@ -231,6 +238,20 @@ export interface TimelineWeek {
   tasks: string[]
 }
 
+export interface NewsItem {
+  headline: string
+  source: string
+  url: string
+  date: string
+}
+
+/** Why this crop, now: live weather signals, market signals and dated, sourced news. */
+export interface WhyNow {
+  weather: string[]
+  market: string[]
+  news: NewsItem[]
+}
+
 export interface CropRecommendation {
   crop: string
   name: string
@@ -238,6 +259,7 @@ export interface CropRecommendation {
   sowingWindow: { from: string; to: string }
   durationDays: number
   why: string
+  whyNow?: WhyNow
   timeline: TimelineWeek[]
 }
 

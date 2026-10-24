@@ -82,6 +82,13 @@ interface FarmerProfile {
   irrigation: Irrigation
   tankSizeLitres: number   // sprayer tank, usually 15 or 16
   consentAt: string | null // ISO timestamp the farmer agreed to the privacy notice
+  // optional "basic questions" asked right after sign-in
+  experienceYears?: number
+  landOwnership?: 'own' | 'lease' | 'both'
+  farmingType?: 'conventional' | 'organic' | 'mixed'
+  goals?: string[]         // 'more_yield' | 'better_price' | 'less_cost' | 'save_water' | 'schemes' | 'organic'
+  sellsAt?: string[]       // 'mandi' | 'trader' | 'fpo' | 'direct' | 'contract'
+  livestock?: string[]     // 'cow' | 'buffalo' | 'goat' | 'poultry' | 'none'
   createdAt?: string
   updatedAt?: string
 }
@@ -265,6 +272,11 @@ interface CropRecommendation {
   sowingWindow: { from: string; to: string }
   durationDays: number
   why: string
+  whyNow?: {                     // why this crop, now
+    weather: string[]            // from the live forecast, e.g. "Good soil moisture after 42 mm rain this week"
+    market: string[]             // from mandi trends / MSP, e.g. "Gram MSP raised to ₹X/quintal"
+    news: { headline: string; source: string; url: string; date: string }[] // real, dated, sourced
+  }
   timeline: { week: number; title: string; tasks: string[] }[]
 }
 ```
