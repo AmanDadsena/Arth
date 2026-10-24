@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import type { FarmerProfile } from '@/lib/api/types'
 import { toInput, useSaveFarmer } from '@/lib/api/queries'
 import { LanguageSwitcher } from '@/components/ui'
+import { setReadAloud, useReadAloudPref } from '@/components/voice'
 import { useAlertPrefs } from './profileData'
 import { IconBubble, PIcon, RowGroup, ToggleRow } from './parts'
 
@@ -11,6 +12,7 @@ export function SettingsSection({ f }: { f: FarmerProfile }) {
   const { t: tc } = useTranslation('common')
   const save = useSaveFarmer()
   const { prefs, toggle } = useAlertPrefs()
+  const readAloud = useReadAloudPref()
   const crops = f.crops.map((c) => tc(`crops.${c}`, { defaultValue: c })).join(', ')
 
   return (
@@ -31,6 +33,17 @@ export function SettingsSection({ f }: { f: FarmerProfile }) {
         </div>
         <LanguageSwitcher className="mt-3" onPick={(lang) => lang !== f.lang && save.mutate({ ...toInput(f), lang })} />
       </div>
+
+      <RowGroup>
+        <ToggleRow
+          icon="speaker"
+          tint="grow"
+          label={t('prefs.readAloud')}
+          sub={t('prefs.readAloudSub')}
+          on={readAloud}
+          onToggle={() => setReadAloud(!readAloud)}
+        />
+      </RowGroup>
 
       <div>
         <div className="mx-1 mb-2 flex items-center gap-1.5 text-[13px] font-semibold uppercase tracking-[1.4px] text-faint">

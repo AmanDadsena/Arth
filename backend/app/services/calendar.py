@@ -281,6 +281,9 @@ def _soil_lines(rec: CropRecommendation, district: dict | None, lang: Lang) -> l
     return out
 
 
+EXTRAS_BUDGET_S = 6.0  # weather + mandi lines for "why now"
+
+
 async def build(*, http, mandi, profile: dict, season: Season | None, lang: Lang, timeout: float,
                 today: date | None = None) -> CalendarResponse:
     today = today or weather.today_ist()
@@ -302,7 +305,13 @@ async def build(*, http, mandi, profile: dict, season: Season | None, lang: Lang
     priced = [r.crop for r in cal.recommendations[:4] if r.crop in COMMODITY_NAMES]
     tasks = [safe(weather.get_raw(http, lat, lon, timeout))] if lat is not None else []
     tasks += [safe(mandi.prices(c, lat, lon)) for c in priced] if lat is not None else []
-    results = await asyncio.gather(*tasks)
+    # The plan is rules and instant; live signals are extras with a time budget, so a slow
+    # source can't time the calendar out. Unfinished fetches keep running and fill their
+    # caches for the next visit (live finding: four first-time mandi fetches took 15 s).
+    running = [asyncio.ensure_future(t) for t in tasks]
+    if running:
+        await asyncio.wait(running, timeout=EXTRAS_BUDGET_S)
+    results = [f.result() if f.done() else None for f in running]
     raw = results[0] if results else None
     days = weather.parse_days(raw) if raw else []
     prices = dict(zip(priced, results[1:], strict=False))

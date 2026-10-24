@@ -1,7 +1,11 @@
 import { useState } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Button, Card, EscalateCard, Icon, IconButton } from '@/components/ui'
-import type { FarmerProfile, SchemeResult, VoiceResponse } from '@/lib/api/types'
+import { api } from '@/lib/api/client'
+import { useCloudSync } from '@/lib/api/queries'
+import type { FarmerProfile, SchemeResult, ShareResult, VoiceResponse } from '@/lib/api/types'
+import { useLang } from '@/i18n'
 import { DocChecklist, OfficialLink } from './SchemeResults'
 import { useVoice } from '@/components/voice'
 
@@ -9,7 +13,9 @@ import { useVoice } from '@/components/voice'
  * Application details, fillable by voice. A value heard by voice is
  * "unconfirmed" until the farmer taps the tick; the pencil turns it into a normal input.
  * There is no applications endpoint: saving shows a ready state with the
- * official website, and nothing leaves this screen.
+ * official website. Name, village and bank never leave this screen; if the
+ * farmer opts in, only an anonymous summary (scheme, district, crop, land
+ * range) is shared, and the backend builds even that from fixed lists.
  */
 
 const FIELDS = ['name', 'village', 'district', 'landAcres', 'crop', 'bankName'] as const
@@ -59,6 +65,45 @@ function VoicePanel({ state, onStart, onStop, result }: { state: string; onStart
         </div>
       ) : null}
     </div>
+  )
+}
+
+function ShareOptIn({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+  const { t } = useTranslation('schemes')
+  return (
+    <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-[22px] bg-chip px-4 py-4">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="mt-0.5 h-6 w-6 shrink-0 accent-grow"
+      />
+      <span className="min-w-0">
+        <span className="block text-[16px] font-semibold text-ink">{t('shareTitle')}</span>
+        <span className="mt-1 block text-[14px] leading-snug text-muted">{t('shareBody')}</span>
+      </span>
+    </label>
+  )
+}
+
+function ShareStatus({ state, result }: { state: 'pending' | 'error' | 'success' | 'idle'; result?: ShareResult }) {
+  const { t } = useTranslation('schemes')
+  const { t: tc } = useTranslation('common')
+  if (state === 'idle') return null
+  if (state === 'pending') return <p className="mt-3 text-center text-[14px] text-muted">{t('sharing')}</p>
+  if (state === 'error' || !result) return <p className="mt-3 text-center text-[14px] font-semibold text-warn-d">{t('shareFailed')}</p>
+  const r = result.shared
+  const parts = [r.district, r.crop ? tc(`crops.${r.crop}`, { defaultValue: r.crop }) : null, r.landBand ? t('landBand', { band: r.landBand }) : null]
+  return (
+    <Card className="mt-3 px-5 py-4">
+      <div className="flex items-center gap-2 text-[15px] font-semibold text-grow">
+        <Icon name={result.status === 'sent' ? 'check' : 'cloud'} size={18} />
+        {result.status === 'sent' ? t('shareSent') : t('shareQueued')}
+      </div>
+      <p className="mt-1.5 text-[14px] leading-snug text-muted">
+        {t('shareWhat')}: {parts.filter(Boolean).join(' · ') || '—'}
+      </p>
+    </Card>
   )
 }
 
@@ -134,6 +179,10 @@ function FieldRow({
 export function ApplyForm({ scheme, farmer, onBack }: { scheme: SchemeResult; farmer?: FarmerProfile; onBack: () => void }) {
   const { t } = useTranslation('schemes')
   const { t: tc } = useTranslation('common')
+  const { lang } = useLang()
+  const cloudSync = useCloudSync()
+  const [share, setShare] = useState(false)
+  const shareMut = useMutation({ mutationFn: api.shareScheme })
   const voice = useVoice({ screen: 'schemes.apply', formFields: [...FIELDS] })
   const [form, setForm] = useState<Form>(emptyForm)
   const [focus, setFocus] = useState<FieldKey | null>(null)
@@ -184,6 +233,20 @@ export function ApplyForm({ scheme, farmer, onBack }: { scheme: SchemeResult; fa
   const acres = Number(form.landAcres.value.replace(',', '.'))
   const badAcres = !!form.landAcres.value.trim() && !(Number.isFinite(acres) && acres > 0)
   const canSave = !pending && !missing && !badAcres
+  const sharing = cloudSync && share
+
+  function save() {
+    setSaved(true)
+    // Only these four values are sent; the backend matches them to fixed lists and drops the rest.
+    if (sharing)
+      shareMut.mutate({
+        schemeId: scheme.id,
+        district: form.district.value.trim() || undefined,
+        crop: form.crop.value.trim() || undefined,
+        landAcres: Number.isFinite(acres) && acres > 0 ? acres : undefined,
+        lang,
+      })
+  }
 
   if (saved) {
     return (
@@ -200,9 +263,10 @@ export function ApplyForm({ scheme, farmer, onBack }: { scheme: SchemeResult; fa
             <Icon name="check" size={28} strokeWidth={2.5} />
           </span>
           <div className="display mt-3 text-[24px] text-ink">{t('savedTitle')}</div>
-          <p className="mt-1.5 text-[15px] leading-snug text-muted">{t('savedBody')}</p>
+          <p className="mt-1.5 text-[15px] leading-snug text-muted">{t(sharing ? 'savedBodyShared' : 'savedBody')}</p>
           <OfficialLink url={scheme.officialUrl} className="mt-4 bg-grow text-white" />
         </Card>
+        {sharing ? <ShareStatus state={shareMut.status} result={shareMut.data} /> : null}
 
         <Card className="mt-3 px-5 py-4">
           {FIELDS.filter((k) => form[k].value.trim()).map((k) => (
@@ -219,7 +283,7 @@ export function ApplyForm({ scheme, farmer, onBack }: { scheme: SchemeResult; fa
           </Card>
         ) : null}
 
-        <p className="mt-3 px-2 text-center text-[13px] text-faint">{t('privacyNote')}</p>
+        <p className="mt-3 px-2 text-center text-[13px] text-faint">{t(sharing ? 'privacyNoteShared' : 'privacyNote')}</p>
         <div className="mt-4">
           <Button variant="secondary" onClick={onBack}>
             {t('backToSchemes')}
@@ -272,14 +336,16 @@ export function ApplyForm({ scheme, farmer, onBack }: { scheme: SchemeResult; fa
         ))}
       </Card>
 
+      {cloudSync ? <ShareOptIn checked={share} onChange={setShare} /> : null}
+
       <div className="mt-5">
         <p className="mb-2 min-h-5 text-center text-[14px] font-semibold text-warn-d" aria-live="polite">
           {pending ? t('pendingCount', { count: pending }) : badAcres ? t('badAcres') : missing ? t('fillRequired') : ''}
         </p>
-        <Button icon="check" disabled={!canSave} onClick={() => setSaved(true)}>
+        <Button icon="check" disabled={!canSave} onClick={save}>
           {t('saveDetails')}
         </Button>
-        <p className="mt-3 px-2 text-center text-[13px] text-faint">{t('privacyNote')}</p>
+        <p className="mt-3 px-2 text-center text-[13px] text-faint">{t(sharing ? 'privacyNoteShared' : 'privacyNote')}</p>
       </div>
     </>
   )

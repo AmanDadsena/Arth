@@ -383,3 +383,37 @@ export interface SchemeResult {
 export interface SchemeMatch {
   schemes: SchemeResult[]
 }
+
+/** Opt-in anonymous share of scheme interest. No name, village or bank field exists. */
+export interface ShareRequest {
+  schemeId: string
+  district?: string
+  crop?: string
+  landAcres?: number
+  lang: Lang
+}
+
+/** Exactly what left the device (district, crop matched to fixed lists; land as a range). */
+export interface SharedRecord {
+  recordId: string
+  schemeId: string
+  district: string | null
+  crop: string | null
+  landBand: '0-1' | '1-2' | '2-5' | '5-10' | '10+' | null
+  lang: Lang
+  day: string
+}
+
+export interface ShareResult {
+  /** queued: offline now, the backend sends it when the internet is back */
+  status: 'sent' | 'queued'
+  shared: SharedRecord
+}
+
+export interface Health {
+  ok: boolean
+  model: string
+  modelReady: boolean
+  /** anonymous sharing is set up on this backend */
+  cloudSync: boolean
+}

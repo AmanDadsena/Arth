@@ -467,3 +467,34 @@ class SchemeResult(ApiModel):
 
 class SchemeMatch(ApiModel):
     schemes: list[SchemeResult]
+
+
+# ---- Anonymous cloud share (opt-in, services/sync.py) ------------------------
+
+
+class ShareRequest(ApiInput):
+    """What the apply form may send. No name, village or bank field exists here,
+    and unknown fields are refused, so they can't be sent by mistake."""
+
+    scheme_id: Annotated[str, StringConstraints(pattern=r"^[a-z][a-z0-9-]{0,39}$")]
+    district: str | None = Field(default=None, max_length=60)
+    crop: str | None = Field(default=None, max_length=40)
+    land_acres: float | None = Field(default=None, ge=0, le=10_000)
+    lang: Lang = "mr"
+
+
+class SharedRecord(ApiModel):
+    """Exactly what leaves the device; the Lambda accepts no other keys."""
+
+    record_id: str
+    scheme_id: str
+    district: str | None
+    crop: str | None
+    land_band: Literal["0-1", "1-2", "2-5", "5-10", "10+"] | None
+    lang: Lang
+    day: str
+
+
+class ShareResult(ApiModel):
+    status: Literal["sent", "queued"]
+    shared: SharedRecord

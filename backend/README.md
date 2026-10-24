@@ -68,7 +68,7 @@ flowchart TD
     subgraph Storage["💾 Persistence & External APIs"]
         PythonEngines <--> SQLite["SQLite DB\n(AES-256-GCM Row-bound Profiles,\nHMAC-indexed, 30-day History TTL)"]
         PythonEngines <--> OpenMeteo["Open-Meteo (Forecasts & Geocoding)"]
-        PythonEngines <--> Agmarknet["data.gov.in (Agmarknet Mandi Rates)"]
+        PythonEngines <--> Agmarknet["MSAMB APMC prices (no key) / data.gov.in Agmarknet (with key)"]
     end
 
     PythonEngines --> Response["Format camelCase JSON\nCache-Control: no-store"]
@@ -86,7 +86,7 @@ flowchart TD
 | `/api/farmer/me` | `DELETE` | Erase profile and all history records | Atomic deletion of profile + history (30-day TTL) |
 | `/api/brief` | `GET` | Today's prioritized tasks (*Aaj Ka Kaam*) | Aggregates weather advisories, mandi alerts, calendar |
 | `/api/weather` | `GET` | 7-day forecast & agricultural advisories | Open-Meteo API (15-min cache) + spray rule engine |
-| `/api/mandi/prices` | `GET` | Nearby APMC prices and 30-day trend | data.gov.in Agmarknet API + local trend tracking |
+| `/api/mandi/prices` | `GET` | Nearby APMC prices and 30-day trend | MSAMB public APMC grid (no key) or data.gov.in Agmarknet (with key) + local trend tracking |
 | `/api/mandi/sell-advice` | `POST` | Net profitability calculation | Net = $(\text{Price} \times \text{Qty}) - \text{Transport}$; Gemma explains |
 | `/api/ai/crop-doctor` | `POST` | Disease diagnosis from leaf photo | Gemma 4 Vision $\to$ symptoms/treatments; fallback escalation |
 | `/api/ai/label-reader` | `POST` | Pesticide dose per sprayer tank | Gemma extracts label text; Python computes tank dose |
@@ -132,7 +132,7 @@ flowchart TD
    Edit `.env` to configure desired authentication mode:
    - **For local dev without Firebase:** Set `ARTH_AUTH_DISABLED=true` (accepted only when `ARTH_ENV=development`).
    - **For real Firebase sign-in:** Set `ARTH_FIREBASE_PROJECT_ID=<your-project-id>`.
-   - **For live mandi data:** Set `ARTH_DATA_GOV_IN_API_KEY=<your-api-key>` (free from data.gov.in).
+   - **Live mandi data works without a key** (MSAMB's public APMC price grid). Optionally set `ARTH_DATA_GOV_IN_API_KEY=<your-api-key>` (free from data.gov.in) to use Agmarknet instead.
 
 3. **Start the FastAPI Server:**
    ```bash
@@ -211,6 +211,7 @@ ruff check .
 | **Cryptography** | Apache-2.0 / BSD | AES-256-GCM row-bound database encryption |
 | **Pillow** | HPND (MIT-CMU) | In-memory image sanitization, EXIF scrubbing, and resizing |
 | **Open-Meteo** | CC BY 4.0 | Real-time weather forecasting and reverse geocoding |
-| **Agmarknet via data.gov.in** | Government Open Data License – India | Daily mandi arrival prices across Maharashtra APMCs |
+| **MSAMB (msamb.com)** | Public data published by the Maharashtra State Agricultural Marketing Board | Daily APMC arrivals and prices, last 7 days (default, no key) |
+| **Agmarknet via data.gov.in** | Government Open Data License – India | Daily mandi arrival prices across Maharashtra APMCs (when a key is set) |
 
 For overall project documentation, see the [Root README](../README.md).

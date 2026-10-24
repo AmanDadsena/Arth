@@ -21,6 +21,7 @@ import { api } from '@/lib/api/client'
 import { qk, round2, useFarmer } from '@/lib/api/queries'
 import type { Advisory, Priority, Weather, WeatherDay } from '@/lib/api/types'
 import { useLang } from '@/i18n'
+import { SpeakButton, sentences } from '@/components/voice'
 import { WeatherIcon, rainTone } from './WeatherIcon'
 import { dayName } from './format'
 
@@ -201,6 +202,11 @@ export default function WeatherPage() {
             <CurrentCard data={data} />
 
             <SectionHead>{t('advice')}</SectionHead>
+            <div className="mb-2.5 flex justify-end">
+              <SpeakButton
+                text={advisories.length ? sentences(...advisories.flatMap((a) => [a.title, a.detail])) : sentences(t('noAdvice'), t('noAdviceBody'))}
+              />
+            </div>
             {advisories.length ? (
               <div className="space-y-2.5">
                 {advisories.map((a) => (

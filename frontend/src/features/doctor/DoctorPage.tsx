@@ -9,6 +9,7 @@ import type { CropDiagnosis, Lang } from '@/lib/api/types'
 import { useLang } from '@/i18n'
 import { AiLoading, AI_MUTATION_OPTIONS, ChoiceChip, CONFIDENCE_TONE, confidenceLevel, ListCard, MIN_CONFIDENCE, PhotoThumb, PhotoTips, useScrollIntoViewOn } from './vision'
 import { useSpeech } from './useSpeech'
+import { useReadAloudOnce } from '@/components/voice'
 
 /** Crop Doctor: photo of a sick plant → what it is, how sure, what to do (organic first). */
 
@@ -127,15 +128,22 @@ function DiagnosisResult({ d, file, onScanAnother }: { d: CropDiagnosis; file: F
   const pct = Math.round(Math.max(0, Math.min(1, d.confidence)) * 100)
   const items = tab === 'organic' ? d.treatment.organic : d.treatment.chemical
 
+  const parts = [d.diagnosis + '.']
+  const organic = d.treatment.organic.slice(0, 2)
+  const chemical = d.treatment.chemical.slice(0, 1)
+  if (organic.length) parts.push(`${t('speakOrganic')}: ${organic.join('. ')}.`)
+  if (chemical.length) parts.push(`${t('speakChemical')}: ${chemical.join('. ')}. ${t('chemicalNote')}`)
+  if (needsExpert) parts.push(t('escalateReason'))
+  const spoken = parts.join(' ')
+
+  // Voice-first: read the diagnosis once when it arrives (Profile → Read answers aloud).
+  const { lang } = useLang()
+  const [resultId] = useState(() => `${Date.now()}-${Math.random()}`)
+  useReadAloudOnce(resultId, spoken, lang)
+
   function listen() {
     if (speech.speaking) return speech.stop()
-    const parts = [d.diagnosis + '.']
-    const organic = d.treatment.organic.slice(0, 2)
-    const chemical = d.treatment.chemical.slice(0, 1)
-    if (organic.length) parts.push(`${t('speakOrganic')}: ${organic.join('. ')}.`)
-    if (chemical.length) parts.push(`${t('speakChemical')}: ${chemical.join('. ')}. ${t('chemicalNote')}`)
-    if (needsExpert) parts.push(t('escalateReason'))
-    speech.speak(parts.join(' '))
+    speech.speak(spoken)
   }
 
   return (

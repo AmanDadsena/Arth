@@ -17,6 +17,7 @@ from .llm import LLM
 from .middleware import ProtectionMiddleware
 from .routers import router
 from .services.mandi import MandiService
+from .services.sync import CloudSync
 from .stt import GemmaSTT, WhisperSTT
 
 log = logging.getLogger("arth")
@@ -48,7 +49,7 @@ def create_app(settings: Settings | None = None, *, http: httpx.AsyncClient | No
                       if settings.firebase_project_id else None)
         s.llm = LLM(client, settings.ollama_url, settings.model, label=settings.model_label,
                     timeout_s=settings.llm_timeout_s, max_concurrency=settings.llm_max_concurrency,
-                    num_ctx=settings.llm_num_ctx)
+                    num_ctx=settings.llm_num_ctx, keep_alive=settings.llm_keep_alive)
         s.stt = stt or (
             GemmaSTT(s.llm, settings.max_audio_seconds) if settings.stt_backend == "gemma"
             else WhisperSTT(settings.whisper_model, settings.whisper_device,
@@ -57,9 +58,11 @@ def create_app(settings: Settings | None = None, *, http: httpx.AsyncClient | No
                                resource_id=settings.mandi_resource_id, state=settings.mandi_state,
                                rs_per_quintal_km=settings.transport_rs_per_quintal_km,
                                timeout=settings.http_timeout_s)
+        s.sync = CloudSync(client, db, settings.sync_url, settings.sync_secret,
+                           timeout_s=min(settings.http_timeout_s, 5.0), interval_s=settings.sync_interval_s)
         if settings.auth_disabled:
             log.warning("AUTH DISABLED: every request is user %r. Development only.", settings.dev_uid)
-        tasks = [asyncio.create_task(_purge_loop(db))]
+        tasks = [asyncio.create_task(_purge_loop(db)), asyncio.create_task(s.sync.run())]
         if warm_up:
             # Load both models in the background so the first farmer request is fast.
             tasks.append(s.llm.start_warm_up())  # tracked, so /health stays "not ready" until done

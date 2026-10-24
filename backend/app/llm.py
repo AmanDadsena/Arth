@@ -49,13 +49,14 @@ def prompt(name: str) -> str:
 
 class LLM:
     def __init__(self, http: httpx.AsyncClient, base_url: str, model: str, *, label: str,
-                 timeout_s: float, max_concurrency: int, num_ctx: int):
+                 timeout_s: float, max_concurrency: int, num_ctx: int, keep_alive: str = "4h"):
         self._http = http
         self._url = base_url.rstrip("/") + "/api/chat"
         self.model = model
         self.label = label  # shown to farmers as "Analyzed by ..."
         self._timeout = timeout_s
         self._num_ctx = num_ctx
+        self._keep_alive = keep_alive
         self._sem = asyncio.Semaphore(max_concurrency)
         self._warming: asyncio.Task | None = None
         self._last_warm = -30.0
@@ -66,7 +67,7 @@ class LLM:
             "model": self.model,
             "messages": messages,
             "stream": False,
-            "keep_alive": "30m",
+            "keep_alive": self._keep_alive,
             "think": False,  # extraction wants the answer, not a reasoning trace
             "options": {"temperature": temperature, "num_ctx": self._num_ctx},
         }
@@ -169,7 +170,7 @@ class LLM:
             await self._http.post(self._url, timeout=120.0, json={
                 "model": self.model,
                 "messages": [{"role": "user", "content": "ok", "images": [_WARM_IMAGE]}],
-                "stream": False, "keep_alive": "30m", "think": False,
+                "stream": False, "keep_alive": self._keep_alive, "think": False,
                 # Same num_ctx as real calls: Ollama reloads the model when it changes (live finding:
                 # a warm-up without it made the first farmer request pay a second ~11 s load).
                 "options": {"num_predict": 1, "num_ctx": self._num_ctx},
