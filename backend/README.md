@@ -4,7 +4,7 @@
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg?logo=fastapi&logoColor=white)](app/)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776ab.svg?logo=python&logoColor=white)](pyproject.toml)
-[![Tests](https://img.shields.io/badge/Tests-176%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-203%20passing-brightgreen.svg)](tests/)
 [![AI](https://img.shields.io/badge/LLM-Gemma_4_E2B_via_Ollama-orange.svg)](https://ollama.com)
 [![STT](https://img.shields.io/badge/STT-Gemma_4_Native_%2B_faster--whisper-blue.svg)](app/stt.py)
 [![Security](https://img.shields.io/badge/Storage-AES--256--GCM-success.svg)](app/db.py)
@@ -33,7 +33,7 @@ flowchart TD
         RateLimit --> SecHeaders["Security Headers Injection\n(CSP, nosniff, DENY)"]
         SecHeaders --> AuthCheck{"Authentication Mode"}
         AuthCheck -- "Production" --> FirebaseJWT["Verify Firebase RS256 JWT\n(Google JWKS Cache)"]
-        AuthCheck -- "Local Dev" --> DevBypass["Dev Auth / Demo Bypass\n(ARTH_AUTH_DISABLED=true)"]
+        AuthCheck -- "Local Dev" --> DevBypass["Dev Auth Bypass, API testing only\n(ARTH_AUTH_DISABLED=true)"]
         FirebaseJWT --> UIDExtract["Extract UID strictly from 'sub' claim"]
         DevBypass --> UIDExtract
     end
@@ -132,7 +132,7 @@ flowchart TD
    Edit `.env` to configure desired authentication mode:
    - **For local dev without Firebase:** Set `ARTH_AUTH_DISABLED=true` (accepted only when `ARTH_ENV=development`).
    - **For real Firebase sign-in:** Set `ARTH_FIREBASE_PROJECT_ID=<your-project-id>`.
-   - **For live mandi data:** Set `ARTH_DATA_GOV_IN_KEY=<your-api-key>` (free from data.gov.in).
+   - **For live mandi data:** Set `ARTH_DATA_GOV_IN_API_KEY=<your-api-key>` (free from data.gov.in).
 
 3. **Start the FastAPI Server:**
    ```bash
@@ -140,13 +140,28 @@ flowchart TD
    ```
 
 4. **Connect the Frontend:**
-   In `frontend/.env.local`:
-   ```bash
-   VITE_USE_MOCKS=false
-   VITE_DEV_SIGN_IN=true   # if running with ARTH_AUTH_DISABLED=true
-   VITE_API_BASE_URL=      # leave blank to use the Vite /api proxy
-   ```
+   In `frontend/.env.local`, fill in the four `VITE_FIREBASE_*` values (Google sign-in is the
+   only way into the app) and leave `VITE_API_BASE_URL` blank to use the Vite `/api` proxy.
+   Set `ARTH_FIREBASE_PROJECT_ID` here to the same Firebase project.
    When you run `npm run dev` in `frontend/`, all requests to `/api` are automatically proxied to `http://localhost:8000`.
+
+---
+
+## Farm context without asking (`services/farm.py`, `services/calendar.py`)
+
+- **Soil is never asked.** `PUT /farmer/me` fills `soilType` from the district (nearest of 36
+  Maharashtra district centres, or the named district) unless `soilSource` is `"farmer"`.
+- **`GET /soil`** returns the district's Soil Health Card results (share of tested fields low in
+  N, P, K, organic carbon; share deficient in S, Zn, B, Fe) with plain-language tips that say
+  these are district odds, not the farmer's field.
+- **`GET /calendar`** works from today's date (IST) when no `season` is given: the season and its
+  progress, the farmer's crops and their usual stage today (`data/crop_stages.json`), every
+  sowing window's status (open with days left, or upcoming), kharif windows moved to the
+  district's monsoon onset (IMD 1985–2025), and "why now" lines from the live forecast, live
+  mandi prices and the soil data.
+- **`GET /brief`** adds the weather right now, the place, the crops in the field today and the
+  season progress; crop-stage jobs feed the 2–3 actions.
+- District data: `data/districts.json`, rebuilt with `python scripts/build_districts.py <Project-Rutu checkout>`.
 
 ---
 
@@ -170,7 +185,7 @@ flowchart TD
 
 ## Testing & Code Quality
 
-The backend test suite contains **176 automated tests** that run without requiring an active Ollama instance or external network access (all network calls and model responses are mocked with realistic fixtures):
+The backend test suite contains **203 automated tests** that run without requiring an active Ollama instance or external network access (all network calls and model responses are mocked with realistic fixtures):
 
 ```bash
 # Run full test suite

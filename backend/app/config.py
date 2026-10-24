@@ -1,6 +1,6 @@
 """Runtime settings, read once from environment variables / backend/.env.
 
-Everything that differs between a laptop demo and a deployed server lives here,
+Everything that differs between a laptop and a deployed server lives here,
 so no module reads os.environ directly.
 """
 

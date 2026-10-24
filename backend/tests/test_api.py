@@ -484,3 +484,42 @@ def test_editing_profile_can_drop_answers(client):
     put_profile(client, **BASICS)
     body = put_profile(client).json()  # re-saved without the optional answers
     assert "goals" not in body and "livestock" not in body
+
+
+def test_soil_is_filled_from_the_district(client):
+    body = {k: v for k, v in PROFILE.items() if k != "soilType"}
+    p = client.put("/api/farmer/me", json={**body, "district": "Ratnagiri", "lat": 16.99, "lon": 73.3},
+                   headers=A).json()
+    assert p["soilType"] == "laterite" and p["soilSource"] == "auto"
+    # a farmer's correction in Settings is kept
+    p = client.put("/api/farmer/me", json={**body, "soilType": "red", "soilSource": "farmer"}, headers=A).json()
+    assert p["soilType"] == "red" and p["soilSource"] == "farmer"
+
+
+def test_soil_endpoint(client):
+    assert client.get("/api/soil", headers=A).status_code == 404  # no profile, no point
+    r = client.get("/api/soil", params={"lat": 20.0, "lon": 73.79, "lang": "mr"}, headers=A)
+    assert r.status_code == 200 and r.json()["district"] == "Nashik" and r.json()["soilType"] == "black"
+    assert client.get("/api/soil", params={"lat": 28.6, "lon": 77.2}, headers=A).status_code == 404
+    put_profile(client)
+    assert client.get("/api/soil", params={"lang": "en"}, headers=A).json()["districtLocal"] == "Nashik"
+
+
+def test_calendar_defaults_to_today(client):
+    put_profile(client)
+    r = client.get("/api/calendar", params={"lang": "en"}, headers=A)
+    assert r.status_code == 200
+    c = r.json()
+    assert c["season"] == c["currentSeason"] and c["today"]
+    assert {s["season"] for s in c["seasons"]} == {"kharif", "rabi", "zaid"}
+    assert {f["crop"] for f in c["inField"]} == {"onion", "grapes"}
+    assert all(rec["status"]["phase"] in ("open", "upcoming") for rec in c["recommendations"])
+
+
+def test_brief_has_today(client):
+    put_profile(client)
+    b = client.get("/api/brief", params={"lang": "en"}, headers=A).json()
+    assert b["location"] == "Niphad, Nashik"
+    assert b["current"]["tempC"] is not None and b["seasonNow"]["season"] in ("kharif", "rabi", "zaid")
+    assert {f["crop"] for f in b["inField"]} == {"onion", "grapes"}
+    assert not any("20" in a["title"] and "-" in a["title"] for a in b["actions"])  # no raw ISO dates

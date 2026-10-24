@@ -148,12 +148,9 @@ async def get_raw(http: httpx.AsyncClient, lat: float, lon: float, timeout: floa
     return await _cache.get(f"{lat},{lon}", lambda: _fetch(http, lat, lon, timeout))
 
 
-async def forecast(http: httpx.AsyncClient, lat: float, lon: float, lang: Lang, location: str,
-                   timeout: float) -> Weather:
-    raw = await get_raw(http, lat, lon, timeout)
-    days = parse_days(raw)
+def current(raw: dict) -> CurrentWeather:
     cur = raw.get("current", {})
-    current = CurrentWeather(
+    return CurrentWeather(
         temp_c=round(_num(cur.get("temperature_2m")), 1),
         feels_like_c=round(_num(cur.get("apparent_temperature")), 1),
         humidity=int(_num(cur.get("relative_humidity_2m"))),
@@ -161,7 +158,13 @@ async def forecast(http: httpx.AsyncClient, lat: float, lon: float, lang: Lang, 
         rain_prob=_current_rain_prob(raw),
         condition=condition(cur.get("weather_code")),
     )
-    return Weather(location=location, current=current, daily=days, advisories=advisories(days, lang))
+
+
+async def forecast(http: httpx.AsyncClient, lat: float, lon: float, lang: Lang, location: str,
+                   timeout: float) -> Weather:
+    raw = await get_raw(http, lat, lon, timeout)
+    days = parse_days(raw)
+    return Weather(location=location, current=current(raw), daily=days, advisories=advisories(days, lang))
 
 
 def today_ist() -> date:

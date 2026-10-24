@@ -32,12 +32,13 @@ from .schemas import (
     Season,
     SellAdvice,
     SellAdviceRequest,
+    SoilReport,
     VoiceContext,
     VoiceResponse,
     Weather,
     round_coord,
 )
-from .services import ai, brief, calendar, schemes
+from .services import ai, brief, calendar, farm, schemes
 from .services import mandi as mandi_svc
 from .services import weather as weather_svc
 
@@ -83,6 +84,10 @@ def get_farmer(request: Request, user: Auth):
 def put_farmer(request: Request, user: Auth, body: FarmerProfileInput):
     data = body.model_dump(by_alias=True)
     data = {k: v for k, v in data.items() if not (k in _OPTIONAL_PROFILE_KEYS and v is None)}
+    # Soil is never asked: it follows the district unless the farmer corrected it in Settings.
+    if data.get("soilSource") != "farmer" or not data.get("soilType"):
+        data["soilType"] = farm.soil_type(data["lat"], data["lon"], data["district"])
+        data["soilSource"] = "auto"
     return _db(request).put_profile(user.uid, data)
 
 
@@ -193,9 +198,33 @@ async def voice(request: Request, _: Auth, audio: UploadFile | None = File(None)
 
 
 @router.get("/calendar", response_model=CalendarResponse)
-def get_calendar(request: Request, user: Auth, season: Season, lang: Lang = "mr"):
+async def get_calendar(request: Request, user: Auth, season: Season | None = None, lang: Lang = "mr"):
+    """Today's season unless another is asked for; see services/calendar.py."""
+    s = request.app.state
     p = _db(request).get_profile(user.uid) or {}
-    return calendar.recommend(season, lang, p.get("soilType"), p.get("irrigation"))
+    return await calendar.build(http=s.http, mandi=s.mandi, profile=p, season=season, lang=lang,
+                                timeout=s.settings.http_timeout_s)
+
+
+# --- soil (from location, never asked) ------------------------------------------
+
+
+@router.get("/soil", response_model=SoilReport)
+def get_soil(request: Request, user: Auth, lat: Lat | None = None, lon: Lon | None = None,
+             district: Annotated[str | None, Query(max_length=40)] = None, lang: Lang = "mr"):
+    """District soil for a point (onboarding, before a profile exists) or for the saved farm."""
+    if lat is None or lon is None:
+        p = _db(request).get_profile(user.uid)
+        if p is None and not district:
+            raise ApiError(404, "not_found", "No location yet")
+        p = p or {}
+        lat, lon, district = p.get("lat"), p.get("lon"), district or p.get("district")
+    else:
+        lat, lon = round_coord(lat), round_coord(lon)
+    r = farm.report(lat, lon, district, lang)
+    if r is None:
+        raise ApiError(404, "outside_maharashtra", "No district data for this place")
+    return r
 
 
 @router.post("/schemes/match", response_model=SchemeMatch)

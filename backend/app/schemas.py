@@ -57,7 +57,10 @@ class FarmerProfileInput(ApiInput):
     lon: Lon
     crops: list[CommodityId] = Field(max_length=12)
     land_acres: float = Field(ge=0, le=10_000)
-    soil_type: SoilType
+    # Never asked in onboarding: the server fills it from the district (services/farm.py).
+    # "farmer" means the farmer corrected it in Settings and it is kept as given.
+    soil_type: SoilType | None = None
+    soil_source: Literal["auto", "farmer"] = "auto"
     irrigation: Irrigation
     tank_size_litres: float = Field(gt=0, le=1000)
     consent_at: str | None = Field(default=None, max_length=40)
@@ -82,6 +85,7 @@ class FarmerProfileInput(ApiInput):
 
 
 class FarmerProfile(FarmerProfileInput):
+    soil_type: SoilType = "black"
     created_at: str | None = None
     updated_at: str | None = None
 
@@ -155,12 +159,46 @@ class ToolCallLog(ApiModel):
     ms: int
 
 
+class StageSpan(ApiModel):
+    start: str  # MM-DD
+    end: str    # MM-DD, may be before start (crosses the new year)
+    phase: Literal["sow", "grow", "protect", "harvest", "rest"]
+    name: str
+
+
+class FieldCrop(ApiModel):
+    """One of the farmer's crops and where it typically stands today (from the date)."""
+    crop: str
+    name: str
+    phase: Literal["sow", "grow", "protect", "harvest", "rest"]
+    stage: str
+    task: str
+    stage_from: str
+    stage_to: str
+    progress: float  # 0..1 through the current stage
+    year: list[StageSpan] = []  # the crop's whole typical year, for the year map
+
+
+class SeasonNow(ApiModel):
+    season: Season
+    name: str
+    # 0..1 through the season, for the year map
+    progress: float
+    days_left: int
+    next_season: Season
+    next_starts: str
+
+
 class Brief(ApiModel):
     greeting: str
     date: str
+    location: str
+    current: CurrentWeather | None = None
     weather: list[WeatherDay]
     actions: list[ActionItem]
     price_alerts: list[PriceAlert]
+    in_field: list[FieldCrop] = []
+    season_now: SeasonNow | None = None
     tool_calls: list[ToolCallLog]
 
 
@@ -307,19 +345,90 @@ class SowingWindow(ApiModel):
     to: str
 
 
+class NewsItem(ApiModel):
+    headline: str
+    source: str
+    url: str
+    date: str
+
+
+class WhyNow(ApiModel):
+    weather: list[str]
+    market: list[str]
+    soil: list[str] = []
+    news: list[NewsItem] = []
+
+
+class WindowStatus(ApiModel):
+    # open: `days` left to sow; upcoming: `days` until it opens; passed: until it opens again
+    phase: Literal["open", "upcoming", "passed"]
+    days: int
+
+
 class CropRecommendation(ApiModel):
     crop: str
     name: str
     suitability: Literal["high", "medium", "low"]
     sowing_window: SowingWindow
+    # "onset": a kharif window moved to this district's monsoon onset (IMD record)
+    window_basis: Literal["onset", "calendar"] = "calendar"
+    status: WindowStatus | None = None
     duration_days: int
     why: str
+    why_now: WhyNow | None = None
     timeline: list[TimelineWeek]
+
+
+class MonsoonOnset(ApiModel):
+    district: str
+    expected: str       # this year's expected onset from the 40-year trend
+    old_date: str       # where the trend stood at the start of the record
+    shift_days: float   # negative = earlier
+    significant: bool
+    years: str
+
+
+class SeasonSpan(ApiModel):
+    season: Season
+    name: str
+    start: str  # MM-DD
+    end: str    # MM-DD
 
 
 class CalendarResponse(ApiModel):
     season: Season
+    today: str = ""
+    current_season: Season | None = None
+    season_now: SeasonNow | None = None
+    seasons: list[SeasonSpan] = []
+    onset: MonsoonOnset | None = None
+    in_field: list[FieldCrop] = []
     recommendations: list[CropRecommendation]
+
+
+# ---- Soil (from location, never asked) -----------------------------------------
+
+
+class NutrientShares(ApiModel):
+    low: float
+    medium: float
+    high: float
+
+
+class SoilReport(ApiModel):
+    district: str
+    district_local: str
+    soil_type: SoilType
+    basis: Literal["district"] = "district"
+    cycle: str | None
+    samples: int
+    nitrogen: NutrientShares | None
+    phosphorus: NutrientShares | None
+    potassium: NutrientShares | None
+    organic_carbon: NutrientShares | None
+    deficient: dict[str, float]  # sulphur, zinc, boron, iron -> share of samples deficient
+    tips: list[str]
+    source: str
 
 
 # ---- Schemes -----------------------------------------------------------------
