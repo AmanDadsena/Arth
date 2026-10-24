@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Badge, Button, Card, EmptyState, EscalateCard, EyebrowLabel, Icon } from '@/components/ui'
 import type { SchemeResult } from '@/lib/api/types'
 import { SpeakButton, sentences } from '@/components/voice'
+import { TrackButton } from './ApplicationsPanel'
 
 /** Eligible schemes first (green check + reasons), the rest collapsed below. */
 
@@ -102,6 +103,7 @@ function EligibleCard({ s, onApply }: { s: SchemeResult; onApply: () => void }) 
         <Button icon="mic" size="md" onClick={onApply}>
           {t('apply')}
         </Button>
+        <TrackButton schemeId={s.id} />
         <OfficialLink url={s.officialUrl} />
       </div>
     </Card>

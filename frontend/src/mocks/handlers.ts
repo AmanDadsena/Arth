@@ -26,6 +26,9 @@ const ROUTES: [keyof typeof http, string][] = [
   ['post', '/ai/voice'],
   ['get', '/calendar'],
   ['post', '/schemes/match'],
+  ['get', '/applications'],
+  ['put', '/applications/:schemeId'],
+  ['delete', '/applications/:schemeId'],
 ]
 
 // Match only API calls under the base URL — a bare `*/weather` would also
@@ -35,7 +38,9 @@ export const handlers = [
     const make = http[method] as typeof http.get
     return make(`${env.apiBaseUrl}${path}`, async ({ request }) => {
       const url = new URL(request.url)
-      return resolveMock(request.method, path + url.search, await readBody(request))
+      // routes with a :param resolve on the real path, e.g. /applications/pm-kisan
+      const real = path.includes(':') ? url.pathname.slice(url.pathname.indexOf(path.split('/:')[0]!)) : path
+      return resolveMock(request.method, real + url.search, await readBody(request))
     })
   }),
   // the resolver's own live-data calls go straight to the network

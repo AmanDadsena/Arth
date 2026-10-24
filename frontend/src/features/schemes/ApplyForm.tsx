@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Button, Card, EscalateCard, Icon, IconButton } from '@/components/ui'
 import type { FarmerProfile, SchemeResult, VoiceResponse } from '@/lib/api/types'
 import { DocChecklist, OfficialLink } from './SchemeResults'
+import { MarkAppliedButton } from './ApplicationsPanel'
 import { useVoice } from '@/components/voice'
 
 /**
@@ -202,6 +203,9 @@ export function ApplyForm({ scheme, farmer, onBack }: { scheme: SchemeResult; fa
           <div className="display mt-3 text-[24px] text-ink">{t('savedTitle')}</div>
           <p className="mt-1.5 text-[15px] leading-snug text-muted">{t('savedBody')}</p>
           <OfficialLink url={scheme.officialUrl} className="mt-4 bg-grow text-white" />
+          <div className="mt-2.5">
+            <MarkAppliedButton schemeId={scheme.id} />
+          </div>
         </Card>
 
         <Card className="mt-3 px-5 py-4">

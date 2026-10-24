@@ -3,6 +3,9 @@ import { env } from '../env'
 import { isDemo } from '../demo'
 import type {
   ApiErrorBody,
+  Application,
+  ApplicationInput,
+  ApplicationList,
   Brief,
   CalendarResponse,
   CropDiagnosis,
@@ -180,6 +183,11 @@ export const api = {
 
   matchSchemes: (answers: SchemeAnswers, lang: Lang) =>
     request<SchemeMatch>('POST', '/schemes/match', { json: { answers, lang } }),
+
+  getApplications: (lang: Lang) => request<ApplicationList>('GET', '/applications', { query: { lang } }),
+  putApplication: (schemeId: string, body: ApplicationInput, lang: Lang) =>
+    request<Application>('PUT', `/applications/${encodeURIComponent(schemeId)}`, { json: body, query: { lang } }),
+  deleteApplication: (schemeId: string) => request<DeleteResult>('DELETE', `/applications/${encodeURIComponent(schemeId)}`),
 }
 
 export type Api = typeof api

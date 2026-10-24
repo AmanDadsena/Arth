@@ -72,5 +72,32 @@
   "savedBody": "Nothing has been sent yet. Open the official website and use these details to apply.",
   "carry": "Carry these documents",
   "backToSchemes": "Back to schemes",
-  "privacyNote": "These details stay on this screen only and are cleared when you leave."
+  "privacyNote": "These details stay on this screen only and are cleared when you leave.",
+  "tracker": {
+    "title": "My applications",
+    "count": "{{count}} tracked",
+    "status": {
+      "preparing": "Preparing",
+      "applied": "Applied",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "statusLabel": "Status",
+    "docs": "{{done}} of {{total}} documents ready",
+    "next": "Next step",
+    "lastDate": "Last date",
+    "lastDateHint": "From the notice or the official website",
+    "appliedOn": "Applied on",
+    "reference": "Application / reference number",
+    "referenceHint": "Not your Aadhaar, PAN or phone number",
+    "save": "Save",
+    "remove": "Stop tracking",
+    "removeConfirm": "Stop tracking {{name}}?",
+    "removeBody": "Its documents, dates and reference number will be deleted from Arth.",
+    "track": "Track this application",
+    "tracking": "Tracking in My applications",
+    "markApplied": "I have applied — track it",
+    "refIsId": "That looks like an Aadhaar, PAN or phone number. Enter the application number instead.",
+    "failed": "Couldn't save. Please try again."
+  }
 }

@@ -8,7 +8,7 @@ import json
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Form, Query, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Path, Query, Request, UploadFile
 from pydantic import ValidationError
 
 from . import media
@@ -16,6 +16,9 @@ from .auth import User, current_user
 from .db import Database
 from .errors import ApiError
 from .schemas import (
+    Application,
+    ApplicationInput,
+    ApplicationList,
     Brief,
     CalendarResponse,
     CropDiagnosis,
@@ -38,7 +41,7 @@ from .schemas import (
     Weather,
     round_coord,
 )
-from .services import ai, alerts, brief, calendar, insights, schemes
+from .services import ai, alerts, applications, brief, calendar, insights, schemes
 from .services import mandi as mandi_svc
 from .services import weather as weather_svc
 
@@ -100,10 +103,11 @@ def delete_farmer(request: Request, user: Auth):
 async def get_brief(request: Request, user: Auth, lang: Lang = "mr"):
     s = request.app.state
     profile = _profile(request, user)
-    community = alerts.nearby_alerts(s.db, profile.get("district"), lang, profile.get("crops", []),
-                                     s.settings.pest_alert_min_farmers)
+    extra = alerts.nearby_alerts(s.db, profile.get("district"), lang, profile.get("crops", []),
+                                 s.settings.pest_alert_min_farmers)
+    extra += applications.reminders(s.db.list_applications(user.uid), lang, weather_svc.today_ist())
     return await brief.build(http=s.http, mandi=s.mandi, profile=profile, lang=lang,
-                             timeout=s.settings.http_timeout_s, community=community)
+                             timeout=s.settings.http_timeout_s, extra=extra)
 
 
 @router.get("/weather", response_model=Weather)
@@ -232,3 +236,34 @@ async def get_calendar(request: Request, user: Auth, season: Season, lang: Lang 
 @router.post("/schemes/match", response_model=SchemeMatch)
 def match_schemes(_: Auth, body: SchemeMatchRequest):
     return schemes.match(body.answers, body.lang)
+
+
+# --- scheme application tracker -----------------------------------------------------
+
+SchemeId = Annotated[str, Path(pattern=r"^[a-z0-9][a-z0-9-]{0,39}$")]
+
+
+@router.get("/applications", response_model=ApplicationList)
+def list_applications(request: Request, user: Auth, lang: Lang = "mr"):
+    stored = _db(request).list_applications(user.uid)
+    known = [st for st in stored if any(sc["id"] == st["schemeId"] for sc in schemes._load()["schemes"])]
+    return ApplicationList(applications=applications.ordered([applications.view(st, lang) for st in known]))
+
+
+@router.put("/applications/{scheme_id}", response_model=Application)
+def put_application(request: Request, user: Auth, scheme_id: SchemeId, body: ApplicationInput, lang: Lang = "mr"):
+    db = _db(request)
+    data = applications.validate(scheme_id, body)
+    is_new = not any(a["schemeId"] == scheme_id for a in db.list_applications(user.uid))
+    if is_new and db.count_applications(user.uid) >= applications.MAX_APPLICATIONS:
+        raise ApiError(400, "too_many_applications", "You are already tracking the maximum number of applications.")
+    db.put_application(user.uid, scheme_id, data)
+    stored = next(a for a in db.list_applications(user.uid) if a["schemeId"] == scheme_id)
+    return applications.view(stored, lang)
+
+
+@router.delete("/applications/{scheme_id}", response_model=DeleteResult)
+def delete_application(request: Request, user: Auth, scheme_id: SchemeId):
+    if not _db(request).delete_application(user.uid, scheme_id):
+        raise ApiError(404, "not_found", "Not tracked")
+    return DeleteResult()

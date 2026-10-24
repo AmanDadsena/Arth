@@ -8,6 +8,7 @@ import { useFarmer } from '@/lib/api/queries'
 import type { SchemeAnswers, SchemeMatch, SchemeResult } from '@/lib/api/types'
 import { useLang } from '@/i18n'
 import { ApplyForm } from './ApplyForm'
+import { ApplicationsPanel } from './ApplicationsPanel'
 import { QUESTIONS, SchemeQuiz, type Draft } from './SchemeQuiz'
 import { SchemeResults } from './SchemeResults'
 
@@ -94,6 +95,9 @@ export default function SchemesPage() {
     body = (
       <>
         <Header title={t('resultsTitle')} onBack={() => restart(true)} backLabel={t('changeAnswers')} />
+        <div className="mt-4">
+          <ApplicationsPanel />
+        </div>
         {match.isPending ? (
           <div role="status" aria-label={t('finding')} className="mt-4 space-y-3">
             <p className="px-1 text-[16px] font-medium text-muted">{t('finding')}</p>
@@ -121,6 +125,7 @@ export default function SchemesPage() {
   } else {
     body = (
       <>
+        {step === 0 ? <ApplicationsPanel /> : null}
         <div className="mb-4 flex items-center justify-between px-1">
           <span className="text-[13px] font-semibold uppercase tracking-[1.6px] text-faint">{t('title')}</span>
         </div>

@@ -4,6 +4,7 @@ import { getLiveHistory, getLiveMandi, hasLiveMandi, peekLiveMandi } from '@/lib
 import { getLiveWeather } from '@/lib/live/weather'
 import { whyNowFor } from './calendarInsights'
 import * as data from './data'
+import { resolveApplications } from './applications'
 
 /**
  * One resolver for every endpoint, shared by demo mode (called in-process by
@@ -87,6 +88,9 @@ export async function resolveMock(method: string, pathWithQuery: string, body?: 
 
   // AI calls are slow on purpose so loading states are visible; live data needs no delay
   if (path.startsWith('/ai/')) await wait(1500)
+
+  const tracked = resolveApplications(method.toUpperCase(), path, asLang(q.get('lang')), body)
+  if (tracked) return json(tracked.body, tracked.status)
 
   const route = `${method.toUpperCase()} ${path}`
   switch (route) {

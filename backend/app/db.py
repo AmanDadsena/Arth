@@ -66,6 +66,14 @@ CREATE TABLE IF NOT EXISTS pest_reports (
     expires_at  TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS pest_area ON pest_reports(district, created_at);
+CREATE TABLE IF NOT EXISTS applications (
+    uid_hash   TEXT NOT NULL,
+    scheme_id  TEXT NOT NULL,
+    sealed     BLOB NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (uid_hash, scheme_id)
+);
 CREATE TABLE IF NOT EXISTS geocodes (
     place TEXT PRIMARY KEY,
     lat   REAL,
@@ -157,6 +165,7 @@ class Database:
             try:
                 self._conn.execute("DELETE FROM history WHERE uid_hash=?", (h,))
                 self._conn.execute("DELETE FROM pest_reports WHERE uid_hash=?", (h,))
+                self._conn.execute("DELETE FROM applications WHERE uid_hash=?", (h,))
                 self._conn.execute("DELETE FROM profiles WHERE uid_hash=?", (h,))
                 self._conn.execute("COMMIT")
             except Exception:
@@ -191,6 +200,37 @@ class Database:
         with self._lock:
             n = self._conn.execute("DELETE FROM history WHERE expires_at<=?", (now_iso(),)).rowcount
             return n + self._conn.execute("DELETE FROM pest_reports WHERE expires_at<=?", (now_iso(),)).rowcount
+
+    # --- scheme applications (sealed like the profile) -------------------------
+    # The AEAD associated data binds each row to its user *and* scheme, so a sealed
+    # row can't be swapped onto another user or another scheme.
+
+    def list_applications(self, uid: str) -> list[dict]:
+        h = self.uid_hash(uid)
+        rows = self._x("SELECT scheme_id, sealed, created_at, updated_at FROM applications WHERE uid_hash=?", (h,))
+        out = []
+        for r in rows:
+            data = json.loads(self._aead.decrypt(r["sealed"][:12], r["sealed"][12:], f"{h}|{r['scheme_id']}".encode()))
+            out.append({**data, "schemeId": r["scheme_id"], "createdAt": r["created_at"], "updatedAt": r["updated_at"]})
+        return out
+
+    def count_applications(self, uid: str) -> int:
+        return self._x("SELECT COUNT(*) AS n FROM applications WHERE uid_hash=?", (self.uid_hash(uid),))[0]["n"]
+
+    def put_application(self, uid: str, scheme_id: str, data: dict) -> None:
+        h = self.uid_hash(uid)
+        nonce = secrets.token_bytes(12)
+        sealed = nonce + self._aead.encrypt(nonce, json.dumps(data).encode(), f"{h}|{scheme_id}".encode())
+        ts = now_iso()
+        self._x(
+            """INSERT INTO applications(uid_hash, scheme_id, sealed, created_at, updated_at) VALUES (?,?,?,?,?)
+               ON CONFLICT(uid_hash, scheme_id) DO UPDATE SET sealed=excluded.sealed, updated_at=excluded.updated_at""",
+            (h, scheme_id, sealed, ts, ts))
+
+    def delete_application(self, uid: str, scheme_id: str) -> bool:
+        with self._lock:
+            return self._conn.execute("DELETE FROM applications WHERE uid_hash=? AND scheme_id=?",
+                                      (self.uid_hash(uid), scheme_id)).rowcount > 0
 
     # --- community pest reports ----------------------------------------------
     # Only district, crop and pest are kept (no name, village or coordinates), keyed by

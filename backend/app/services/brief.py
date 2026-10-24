@@ -67,7 +67,7 @@ def weather_actions(days: list[WeatherDay], lang: Lang) -> list[ActionItem]:
 
 
 async def build(*, http, mandi: MandiService, profile: dict, lang: Lang, timeout: float,
-                today: date | None = None, community: list[ActionItem] | None = None) -> Brief:
+                today: date | None = None, extra: list[ActionItem] | None = None) -> Brief:
     today = today or weather.today_ist()
     lat, lon = profile["lat"], profile["lon"]
     crops: list[str] = profile.get("crops", [])[:3]
@@ -109,9 +109,10 @@ async def build(*, http, mandi: MandiService, profile: dict, lang: Lang, timeout
                                   route="/calendar", title=T["sow_title"][lang].format(c=r.name, to=r.sowing_window.to),
                                   detail=T["sow_detail"][lang]))
 
-    if community is not None:
-        actions.extend(community)  # nearby pest outbreaks (services/alerts.py)
-        tools.append(ToolCallLog(name="get_nearby_pest_reports", args={"district": profile.get("district")}, ms=0))
+    if extra is not None:
+        # nearby pest outbreaks (services/alerts.py) and scheme deadline reminders (services/applications.py)
+        actions.extend(extra)
+        tools.append(ToolCallLog(name="get_alerts_and_reminders", args={"district": profile.get("district")}, ms=0))
     actions.sort(key=lambda a: _PRIORITY[a.priority])
     first = (profile.get("name") or "").split(" ")[0]
     return Brief(greeting=T["greet"][lang].format(n=first).strip(" ,"), date=today.isoformat(), weather=days,

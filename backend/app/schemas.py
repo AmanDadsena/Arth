@@ -5,6 +5,7 @@ Request models forbid unknown fields and bound every string and number, so
 oversized or unexpected input is rejected before any handler runs.
 """
 
+from datetime import date
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
@@ -367,3 +368,44 @@ class SchemeResult(ApiModel):
 
 class SchemeMatch(ApiModel):
     schemes: list[SchemeResult]
+
+
+# ---- Scheme application tracker ------------------------------------------------
+
+ApplicationStatus = Literal["preparing", "applied", "approved", "rejected"]
+
+
+class ApplicationInput(ApiInput):
+    status: ApplicationStatus = "preparing"
+    # Indexes into the scheme's documents list: stable across languages.
+    docs_ready: list[Annotated[int, Field(ge=0, le=19)]] = Field(default_factory=list, max_length=20)
+    applied_on: date | None = None
+    reference_no: Annotated[str, StringConstraints(strip_whitespace=True, max_length=40,
+                                                   pattern=r"^[A-Za-z0-9/\-_. ]*$")] | None = None
+    last_date: date | None = None  # the farmer's own deadline, e.g. read from a notice in Kagaz
+    note: Annotated[str, StringConstraints(strip_whitespace=True, max_length=200)] | None = None
+
+    @field_validator("docs_ready")
+    @classmethod
+    def _unique(cls, v: list[int]) -> list[int]:
+        return sorted(set(v))
+
+
+class Application(ApiModel):
+    scheme_id: str
+    name: str
+    official_url: str
+    status: ApplicationStatus
+    documents: list[str]
+    docs_ready: list[int]
+    applied_on: date | None
+    reference_no: str | None
+    last_date: date | None
+    note: str | None
+    next_step: str
+    created_at: str
+    updated_at: str
+
+
+class ApplicationList(ApiModel):
+    applications: list[Application]

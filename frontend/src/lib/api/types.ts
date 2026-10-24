@@ -294,3 +294,36 @@ export interface SchemeResult {
 export interface SchemeMatch {
   schemes: SchemeResult[]
 }
+
+// ---- Scheme application tracker ------------------------------------------
+
+export type ApplicationStatus = 'preparing' | 'applied' | 'approved' | 'rejected'
+
+export interface ApplicationInput {
+  status: ApplicationStatus
+  docsReady?: number[] // indexes into the scheme's documents
+  appliedOn?: string | null // YYYY-MM-DD
+  referenceNo?: string | null // the application number — never Aadhaar/PAN/phone (server refuses)
+  lastDate?: string | null // the farmer's own deadline, YYYY-MM-DD
+  note?: string | null
+}
+
+export interface Application {
+  schemeId: string
+  name: string
+  officialUrl: string
+  status: ApplicationStatus
+  documents: string[]
+  docsReady: number[]
+  appliedOn: string | null
+  referenceNo: string | null
+  lastDate: string | null
+  note: string | null
+  nextStep: string // localized, from rules
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ApplicationList {
+  applications: Application[]
+}
