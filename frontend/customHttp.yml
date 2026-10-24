@@ -2,7 +2,7 @@ customHeaders:
   - pattern: '**/*'
     headers:
       - key: 'Content-Security-Policy'
-        value: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://lh3.googleusercontent.com; connect-src 'self' https://*.execute-api.ap-south-1.amazonaws.com https://*.googleapis.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com; frame-src https://*.firebaseapp.com https://accounts.google.com; worker-src 'self' blob:; manifest-src 'self'; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+        value: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://lh3.googleusercontent.com; connect-src 'self' https://*.execute-api.ap-south-1.amazonaws.com https://*.googleapis.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com https://api.open-meteo.com https://api.data.gov.in; frame-src https://*.firebaseapp.com https://accounts.google.com; worker-src 'self' blob:; manifest-src 'self'; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
       - key: 'X-Frame-Options'
         value: "DENY"
       - key: 'X-Content-Type-Options'

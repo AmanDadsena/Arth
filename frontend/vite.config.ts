@@ -62,6 +62,28 @@ export default defineConfig({
               cacheableResponse: { statuses: [200] },
             },
           },
+          // live public data the mock resolver reads (src/lib/live keeps its own
+          // localStorage copy too); short expiry so prices and forecasts stay current
+          {
+            urlPattern: ({ url }) => url.origin === 'https://api.open-meteo.com',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'arth-live-weather',
+              networkTimeoutSeconds: 6,
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 3 },
+              cacheableResponse: { statuses: [200] },
+            },
+          },
+          {
+            urlPattern: ({ url }) => url.origin === 'https://api.data.gov.in',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'arth-live-mandi',
+              networkTimeoutSeconds: 6,
+              expiration: { maxEntries: 40, maxAgeSeconds: 60 * 60 * 12 },
+              cacheableResponse: { statuses: [200] },
+            },
+          },
           {
             urlPattern: /\/fonts\/.*\.woff2$/,
             handler: 'CacheFirst',
