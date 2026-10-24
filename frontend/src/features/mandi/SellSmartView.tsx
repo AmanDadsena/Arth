@@ -7,6 +7,7 @@ import type { SellAdvice, SellAdviceRequest } from '@/lib/api/types'
 import { rupees, useLang } from '@/i18n'
 import { MAX_QUINTALS, parseQuintals } from './commodities'
 import { useSpeech } from './useSpeech'
+import { langOfLocale, NoVoiceHint } from '@/components/voice'
 
 const QUICK = [5, 10, 25, 50]
 const N = <span className="num" />
@@ -192,6 +193,7 @@ function AdviceResult({ advice, quantity, crop }: { advice: SellAdvice; quantity
             {speech.speaking ? t('sell.stop') : t('sell.listen')}
           </button>
         ) : null}
+        <NoVoiceHint lang={langOfLocale(locale)} />
       </div>
 
       {/* Reasoning */}

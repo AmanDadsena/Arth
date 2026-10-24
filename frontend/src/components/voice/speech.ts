@@ -87,32 +87,90 @@ export function stopSpeaking() {
   setActive(null)
 }
 
+/** Chrome lists voices only after they load; wait briefly the first time. */
+function voicesLoaded(timeoutMs = 1500): Promise<void> {
+  const synth = window.speechSynthesis
+  if (synth.getVoices().length) return Promise.resolve()
+  return new Promise((resolve) => {
+    const done = () => {
+      synth.removeEventListener('voiceschanged', done)
+      resolve()
+    }
+    synth.addEventListener('voiceschanged', done)
+    setTimeout(done, timeoutMs)
+  })
+}
+
+// Kept alive until spoken: Chrome drops the end event of an utterance that was garbage-collected.
+let queued: SpeechSynthesisUtterance[] = []
+
+/**
+ * Read `text` aloud. Live finding: with no Hindi or Marathi voice installed (stock
+ * Windows has English only), browsers "speak" Devanagari with an English voice,
+ * so nothing is heard and no error fires. Hindi and Marathi therefore need a
+ * matching voice (Marathi may use a Hindi one); without it nothing is spoken and
+ * useMissingVoice() reports the language so the screen can say how to add one.
+ */
 export function speak(text: string, lang: Lang): boolean {
   if (!isSpeechSupported() || !text.trim()) return false
   const synth = window.speechSynthesis
   const gen = ++generation
+  const busy = synth.speaking || synth.pending
   synth.cancel()
-
-  const voice = pickVoice(lang)
-  const tag = voice?.lang ?? localeOf(lang)
-  const parts = chunks(text)
   const key = speechKey(text, lang)
-
-  parts.forEach((part, i) => {
-    const u = new SpeechSynthesisUtterance(part)
-    u.lang = tag
-    if (voice) u.voice = voice
-    u.rate = 0.95
-    if (i === parts.length - 1) {
-      u.onend = () => gen === generation && setActive(null)
-    }
-    u.onerror = () => gen === generation && setActive(null)
-    synth.speak(u)
-  })
-  // Chrome sometimes starts paused after cancel()
-  if (synth.paused) synth.resume()
   setActive(key)
+
+  const start = () => {
+    if (gen !== generation) return
+    const voice = pickVoice(lang)
+    if (!voice && lang !== 'en') {
+      setActive(null)
+      setMissing(lang)
+      return
+    }
+    setMissing(null)
+    const parts = chunks(text)
+    queued = parts.map((part, i) => {
+      const u = new SpeechSynthesisUtterance(part)
+      u.lang = voice?.lang ?? localeOf(lang)
+      if (voice) u.voice = voice
+      u.rate = 0.95
+      if (i === parts.length - 1) {
+        u.onend = () => gen === generation && setActive(null)
+      }
+      u.onerror = () => gen === generation && setActive(null)
+      return u
+    })
+    queued.forEach((u) => synth.speak(u))
+    // Chrome sometimes starts paused after cancel()
+    if (synth.paused) synth.resume()
+  }
+  // Chrome silently drops speech queued in the same tick as cancel() of a running one.
+  void voicesLoaded().then(() => (busy ? setTimeout(start, 80) : start()))
   return true
+}
+
+// ---- which language has no voice on this device (for the "add a voice" hint) ---
+
+let missing: Lang | null = null
+const missingListeners = new Set<() => void>()
+
+function setMissing(lang: Lang | null) {
+  if (missing === lang) return
+  missing = lang
+  for (const l of missingListeners) l()
+}
+
+/** The language the last speak() could not read for lack of a voice, else null. */
+export function useMissingVoice(): Lang | null {
+  return useSyncExternalStore(
+    (cb) => {
+      missingListeners.add(cb)
+      return () => missingListeners.delete(cb)
+    },
+    () => missing,
+    () => null,
+  )
 }
 
 function subscribe(cb: () => void) {

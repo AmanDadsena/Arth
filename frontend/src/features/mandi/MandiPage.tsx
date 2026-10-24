@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { ErrorState, PageHeader, SkeletonScreen } from '@/components/ui'
 import { round2, useFarmer } from '@/lib/api/queries'
 import { useLang } from '@/i18n'
-import { defaultCommodity, isMandiCommodity, orderedCommodities, type MandiCommodity } from './commodities'
+import { defaultCommodity, farmerCommodities, isMandiCommodity, type MandiCommodity } from './commodities'
 import { PricesView } from './PricesView'
 import { SellSmartView } from './SellSmartView'
 
@@ -43,8 +43,9 @@ export default function MandiPage() {
   const f = farmer.data
   const lat = round2(f.lat)
   const lon = round2(f.lon)
-  const commodity = picked ?? defaultCommodity(f.crops)
-  const choices = orderedCommodities(f.crops)
+  const choices = farmerCommodities(f.crops)
+  // a crop from a link (?crop=) or an old pick counts only if the farmer grows it
+  const commodity = picked && choices.includes(picked) ? picked : defaultCommodity(choices)
 
   return (
     <>

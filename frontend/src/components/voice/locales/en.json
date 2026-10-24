@@ -31,5 +31,7 @@
     "offline": "No internet. Try again when you have network.",
     "timeout": "The answer took too long. Please try again.",
     "failed": "Something went wrong. Please try again."
-  }
+  },
+  "noVoiceTitle": "No {{language}} voice on this device",
+  "noVoiceBody": "So it can't read this aloud yet; the text above says the same. Add a Hindi voice in the phone's text-to-speech settings (Windows: Settings → Time & language → Speech → Add voices → Hindi). A Hindi voice reads Marathi too."
 }
