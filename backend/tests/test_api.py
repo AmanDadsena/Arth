@@ -484,3 +484,30 @@ def test_editing_profile_can_drop_answers(client):
     put_profile(client, **BASICS)
     body = put_profile(client).json()  # re-saved without the optional answers
     assert "goals" not in body and "livestock" not in body
+
+
+# --- calendar "why now" signals ---------------------------------------------------
+
+
+def test_calendar_includes_why_now_for_located_farmer(client):
+    put_profile(client)
+    recs = client.get("/api/calendar", params={"season": "rabi", "lang": "en"}, headers=A).json()["recommendations"]
+    onion = next(r for r in recs if r["crop"] == "onion")
+    assert set(onion["whyNow"]) == {"weather", "market", "news"}
+    assert onion["whyNow"]["news"] and all(n["url"].startswith("https://") for n in onion["whyNow"]["news"])
+    assert any("onion mandi prices" in m.lower() for m in onion["whyNow"]["market"])  # live 7-day change
+
+
+def test_calendar_survives_weather_and_mandi_outage(client, net):
+    put_profile(client)
+    net.weather_ok = False
+    net.mandi_ok = False
+    r = client.get("/api/calendar", params={"season": "rabi", "lang": "mr"}, headers=A)
+    assert r.status_code == 200
+    onion = next(x for x in r.json()["recommendations"] if x["crop"] == "onion")
+    assert onion["whyNow"]["weather"] == [] and onion["whyNow"]["news"]  # curated news needs no network
+
+
+def test_calendar_without_profile_has_no_signals(client):
+    recs = client.get("/api/calendar", params={"season": "rabi", "lang": "en"}, headers=A).json()["recommendations"]
+    assert recs and all(r.get("whyNow") is None for r in recs)

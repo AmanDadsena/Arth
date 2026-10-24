@@ -307,6 +307,19 @@ class SowingWindow(ApiModel):
     to: str
 
 
+class NewsItem(ApiModel):
+    headline: str
+    source: str
+    url: str
+    date: str
+
+
+class WhyNow(ApiModel):
+    weather: list[str]
+    market: list[str]
+    news: list[NewsItem]
+
+
 class CropRecommendation(ApiModel):
     crop: str
     name: str
@@ -314,6 +327,7 @@ class CropRecommendation(ApiModel):
     sowing_window: SowingWindow
     duration_days: int
     why: str
+    why_now: WhyNow | None = None
     timeline: list[TimelineWeek]
 
 
