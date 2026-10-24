@@ -523,3 +523,20 @@ def test_brief_has_today(client):
     assert b["current"]["tempC"] is not None and b["seasonNow"]["season"] in ("kharif", "rabi", "zaid")
     assert {f["crop"] for f in b["inField"]} == {"onion", "grapes"}
     assert not any("20" in a["title"] and "-" in a["title"] for a in b["actions"])  # no raw ISO dates
+
+
+def test_model_kept_loaded_with_configured_keep_alive(make_client, net):
+    """Live finding: voice timed out (504) after Ollama unloaded the model following 30 idle minutes."""
+    client = make_client(llm_keep_alive="6h", stt_backend="whisper")
+    net.model_loaded = False
+    client.get("/api/health")  # starts a warm-up
+    net.llm_replies.append(DOCTOR_OK)
+    client.post("/api/ai/crop-doctor", headers=A, files=img())
+    assert net.llm_requests and all(r["keep_alive"] == "6h" for r in net.llm_requests)
+
+
+def test_keep_alive_setting_validated(tmp_path):
+    from .conftest import make_settings
+    with pytest.raises(ValueError):
+        make_settings(tmp_path, llm_keep_alive="forever")
+    assert make_settings(tmp_path).llm_keep_alive == "4h"

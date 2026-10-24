@@ -48,7 +48,7 @@ def create_app(settings: Settings | None = None, *, http: httpx.AsyncClient | No
                       if settings.firebase_project_id else None)
         s.llm = LLM(client, settings.ollama_url, settings.model, label=settings.model_label,
                     timeout_s=settings.llm_timeout_s, max_concurrency=settings.llm_max_concurrency,
-                    num_ctx=settings.llm_num_ctx)
+                    num_ctx=settings.llm_num_ctx, keep_alive=settings.llm_keep_alive)
         s.stt = stt or (
             GemmaSTT(s.llm, settings.max_audio_seconds) if settings.stt_backend == "gemma"
             else WhisperSTT(settings.whisper_model, settings.whisper_device,
