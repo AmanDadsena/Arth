@@ -19,6 +19,10 @@ WeatherCondition = Literal[
     "clear", "partly_cloudy", "cloudy", "rain", "heavy_rain", "thunderstorm", "fog"
 ]
 
+Goal = Literal["more_yield", "better_price", "less_cost", "save_water", "schemes", "organic"]
+SellsAt = Literal["mandi", "trader", "fpo", "direct", "contract"]
+Livestock = Literal["cow", "buffalo", "goat", "poultry", "none"]
+
 ShortText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=80)]
 CommodityId = Annotated[
     str, StringConstraints(strip_whitespace=True, to_lower=True, pattern=r"^[a-z][a-z0-9_-]{0,31}$")
@@ -57,11 +61,24 @@ class FarmerProfileInput(ApiInput):
     irrigation: Irrigation
     tank_size_litres: float = Field(gt=0, le=1000)
     consent_at: str | None = Field(default=None, max_length=40)
+    # Optional "basic questions" from onboarding (docs/SPEC.md). Older profiles lack them;
+    # an unanswered question is left out of the request and of the stored profile.
+    experience_years: int | None = Field(default=None, ge=0, le=80)
+    land_ownership: Literal["own", "lease", "both"] | None = None
+    farming_type: Literal["conventional", "organic", "mixed"] | None = None
+    goals: list[Goal] | None = Field(default=None, max_length=6)
+    sells_at: list[SellsAt] | None = Field(default=None, max_length=5)
+    livestock: list[Livestock] | None = Field(default=None, max_length=5)
 
     @field_validator("lat", "lon")
     @classmethod
     def _round(cls, v: float) -> float:
         return round_coord(v)
+
+    @field_validator("goals", "sells_at", "livestock")
+    @classmethod
+    def _dedupe(cls, v: list[str] | None) -> list[str] | None:
+        return list(dict.fromkeys(v)) if v is not None else None
 
 
 class FarmerProfile(FarmerProfileInput):
