@@ -38,6 +38,8 @@ export interface FarmerProfile {
   goals?: string[] // 'more_yield' | 'better_price' | 'less_cost' | 'save_water' | 'schemes' | 'organic'
   sellsAt?: string[] // 'mandi' | 'trader' | 'fpo' | 'direct' | 'contract'
   livestock?: string[] // 'cow' | 'buffalo' | 'goat' | 'poultry' | 'none'
+  /** onboarding questions version answered; below the current one the app asks them again */
+  onboardedVersion?: number
   createdAt?: string
   updatedAt?: string
 }

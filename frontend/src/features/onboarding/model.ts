@@ -13,6 +13,12 @@ import type { FarmerProfile, FarmerProfileInput, Irrigation, Lang } from '@/lib/
 
 export type QuestionId = 'lang' | 'name' | 'where' | 'crops' | 'land' | 'water'
 
+/**
+ * Bump when the essential questions change: every farmer below this version is sent
+ * through onboarding once after signing in (answers they gave before are prefilled).
+ */
+export const ONBOARDING_VERSION = 2
+
 export interface QuestionDef {
   id: QuestionId
   emoji: string
@@ -28,7 +34,7 @@ export const QUESTIONS: QuestionDef[] = [
   { id: 'where', emoji: '📍', optional: false, autoAdvance: false },
   { id: 'crops', emoji: '🌾', optional: false, autoAdvance: false },
   { id: 'land', emoji: '📐', optional: false, autoAdvance: false },
-  { id: 'water', emoji: '💧', optional: true, autoAdvance: true },
+  { id: 'water', emoji: '💧', optional: false, autoAdvance: true },
 ]
 
 /** Index of the summary screen, one past the last question. */
@@ -209,5 +215,6 @@ export function toProfileInput(d: Draft, lang: Lang, consentAt: string | null, e
     goals: existing?.goals,
     sellsAt: existing?.sellsAt,
     livestock: existing?.livestock,
+    onboardedVersion: ONBOARDING_VERSION,
   }
 }

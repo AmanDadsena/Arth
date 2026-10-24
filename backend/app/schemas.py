@@ -72,6 +72,9 @@ class FarmerProfileInput(ApiInput):
     goals: list[Goal] | None = Field(default=None, max_length=6)
     sells_at: list[SellsAt] | None = Field(default=None, max_length=5)
     livestock: list[Livestock] | None = Field(default=None, max_length=5)
+    # Which version of the onboarding questions this farmer has answered. The app sends
+    # anyone below the current version through the questions once (prefilled).
+    onboarded_version: int | None = Field(default=None, ge=0, le=100)
 
     @field_validator("lat", "lon")
     @classmethod

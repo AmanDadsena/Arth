@@ -5,6 +5,7 @@ import { ErrorState } from '@/components/ui'
 import { setLang } from '@/i18n'
 import { useAuth } from './useAuth'
 import { getLocalConsent } from './AuthProvider'
+import { ONBOARDING_VERSION } from '@/features/onboarding/model'
 
 /** Calm full-screen placeholder while auth or the profile resolves. */
 export function BootScreen() {
@@ -17,8 +18,9 @@ export function BootScreen() {
 
 /**
  * Signed in with Google → profile with consent → children.
- * No profile: /consent first, then /onboarding. `requireProfile={false}` is for
- * those two screens themselves.
+ * No profile: /consent first, then /onboarding. A profile that has not answered the
+ * current essential questions (ONBOARDING_VERSION) also goes to /onboarding, once.
+ * `requireProfile={false}` is for those two screens themselves.
  */
 export function ProtectedRoute({ children, requireProfile = true }: { children: ReactNode; requireProfile?: boolean }) {
   const { status } = useAuth()
@@ -51,5 +53,7 @@ export function ProtectedRoute({ children, requireProfile = true }: { children: 
     )
   }
   if (!farmer.data.consentAt) return <Navigate to="/consent" replace />
+  // first sign-in, or a profile made before the current essential questions: ask them once
+  if ((farmer.data.onboardedVersion ?? 0) < ONBOARDING_VERSION) return <Navigate to="/onboarding" replace />
   return <>{children}</>
 }

@@ -523,3 +523,11 @@ def test_brief_has_today(client):
     assert b["current"]["tempC"] is not None and b["seasonNow"]["season"] in ("kharif", "rabi", "zaid")
     assert {f["crop"] for f in b["inField"]} == {"onion", "grapes"}
     assert not any("20" in a["title"] and "-" in a["title"] for a in b["actions"])  # no raw ISO dates
+
+
+def test_onboarded_version_round_trip(client):
+    p = client.put("/api/farmer/me", json=PROFILE, headers=A).json()
+    assert "onboardedVersion" not in p  # older profiles: the app sends them through onboarding
+    p = client.put("/api/farmer/me", json={**PROFILE, "onboardedVersion": 2}, headers=A).json()
+    assert p["onboardedVersion"] == 2
+    assert client.get("/api/farmer/me", headers=A).json()["onboardedVersion"] == 2
