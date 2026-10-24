@@ -68,7 +68,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setDemo(true)
     try {
       // the demo farmer speaks whatever language was picked on the login screen
-      localStorage.setItem('arth.demo.profile', JSON.stringify({ ...DEMO_FARMER, lang: currentLang() }))
+      // and his name is written in that language's script ("नमस्कार रमेशराव", not "Rameshराव")
+      const lang = currentLang()
+      const name = lang === 'en' ? DEMO_FARMER.name : lang === 'hi' ? 'रमेश पाटिल' : 'रमेश पाटील'
+      localStorage.setItem('arth.demo.profile', JSON.stringify({ ...DEMO_FARMER, lang, name }))
     } catch {
       /* resolver falls back to DEMO_FARMER */
     }
