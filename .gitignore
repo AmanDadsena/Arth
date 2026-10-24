@@ -1,0 +1,21 @@
+# dependencies & builds
+node_modules/
+dist/
+dev-dist/
+.aws-sam/
+__pycache__/
+*.pyc
+.venv/
+
+# secrets
+.env
+.env.*
+!.env.example
+*.local
+
+# editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
