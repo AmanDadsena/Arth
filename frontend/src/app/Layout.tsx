@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/features/auth/useAuth'
 import { SkeletonScreen } from '@/components/ui'
+import { isVoiceSupported } from '@/components/voice'
 import { BottomNav, NAV_PATHS } from './BottomNav'
 import { MicSlot } from './MicSlot'
 
@@ -54,22 +55,23 @@ export function Layout() {
   const { pathname, key } = useLocation()
   const { status } = useAuth()
   const showNav = NAV_PATHS.includes(pathname)
+  const [hasMic] = useState(isVoiceSupported)
 
   return (
     <PhoneFrame>
       <div className="flex h-full flex-col">
         {status === 'demo' ? <DemoBanner /> : null}
         <main key={key} className="sc fade relative flex-1 overflow-y-auto overflow-x-hidden">
-          {/* bottom room for the nav and the floating mic, so neither covers the last row */}
-          <div className={`px-4 pt-4 ${showNav ? 'pb-[180px]' : 'pb-[100px]'}`}>
+          {/* bottom room for the nav (with its docked mic) or the floating mic, so neither covers the last row */}
+          <div className={`px-4 pt-4 ${showNav ? 'pb-[136px]' : 'pb-[100px]'}`}>
             <Suspense fallback={<SkeletonScreen />}>
               <Outlet />
             </Suspense>
           </div>
         </main>
       </div>
-      <MicSlot raised={showNav} />
-      {showNav ? <BottomNav /> : null}
+      {showNav ? <BottomNav withMic={hasMic} /> : null}
+      <MicSlot docked={showNav} />
     </PhoneFrame>
   )
 }

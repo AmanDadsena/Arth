@@ -204,3 +204,154 @@ body {
 /* Wide letter-spacing splits Devanagari conjuncts apart ("आ म चा"), so the
    eyebrow tracking used across the app only applies to English. */
 html:not([lang="en"]) [class*="tracking-["] { letter-spacing: 0.01em !important; }
+
+/* ---- Bottom nav: warm floating bar, sliding green pill, docked mic ------- */
+.arth-nav {
+  --nav-side: 10px;
+  --nav-pad: 5px;
+  --nav-bottom: max(12px, env(safe-area-inset-bottom));
+  position: absolute;
+  z-index: 20;
+  left: var(--nav-side);
+  right: var(--nav-side);
+  bottom: var(--nav-bottom);
+  display: flex;
+  align-items: stretch;
+  height: 66px;
+  padding: var(--nav-pad);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, .94);
+  border: 1px solid rgba(23, 21, 15, .06);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, .9) inset,
+    0 20px 40px -14px rgba(23, 21, 15, .30),
+    0 4px 12px -4px rgba(23, 21, 15, .10);
+  -webkit-backdrop-filter: saturate(1.4) blur(14px);
+  backdrop-filter: saturate(1.4) blur(14px);
+}
+.arth-nav-tabs {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.arth-nav-tab {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 5px;
+  border-radius: 20px;
+  color: var(--color-muted);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.arth-nav-icon {
+  display: flex;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  transition: transform .18s ease, color .25s ease;
+}
+.arth-nav-tab:active .arth-nav-icon { transform: scale(.88); }
+.arth-nav-tab[data-active] { color: var(--color-grow); }
+.arth-nav-label {
+  display: block;
+  max-width: 100%;
+  margin-top: 3px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: clip;
+  font-size: 12.5px;
+  line-height: 15px;
+  font-weight: 500;
+  color: var(--color-muted);
+  transition: color .25s ease;
+}
+.arth-nav-tab[data-active] .arth-nav-label { font-weight: 700; color: var(--color-ink); }
+/* the pill: one per bar, slid to the active column */
+.arth-nav-thumb {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 20%;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  transition: transform .45s cubic-bezier(.22, .9, .24, 1);
+}
+.arth-nav-thumb > span {
+  margin-top: 5px;
+  height: 30px;
+  width: min(58px, calc(100% - 2px));
+  border-radius: 999px;
+  background: var(--color-grow-l);
+  box-shadow: inset 0 0 0 1px rgba(46, 107, 63, .10);
+  animation: arth-pill-in .35s ease both;
+}
+@keyframes arth-pill-in { from { transform: scaleX(.6); opacity: 0; } to { transform: none; opacity: 1; } }
+/* room at the right end for the voice button, with its label on the tabs' baseline */
+.arth-nav-micslot {
+  flex: none;
+  width: 68px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  padding-bottom: 3px;
+}
+.arth-nav-miclabel { font-weight: 600; color: var(--color-ink); }
+/* MicButton (64px) rising out of the bar over that slot; the white ring cradles it */
+.arth-nav-mic {
+  width: 60px;
+  height: 60px;
+  right: calc(10px + 5px + 4px);
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 33px);
+  box-shadow:
+    0 0 0 4px #fff,
+    0 12px 22px -6px rgba(23, 21, 15, .40);
+}
+/* the screen fades out under the bar, so half-hidden rows don't peek below it */
+.arth-nav-scrim {
+  position: absolute;
+  z-index: 19;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(max(12px, env(safe-area-inset-bottom)) + 52px);
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(233, 229, 218, 0), var(--color-screen) 60%);
+}
+.arth-float-mic {
+  right: 16px;
+  bottom: max(24px, calc(env(safe-area-inset-bottom) + 12px));
+}
+
+/* ---- Language switcher: segmented control with a sliding thumb ---------- */
+.arth-lang-thumb {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc((100% - 8px) / 3);
+  transition: transform .42s cubic-bezier(.22, .9, .24, 1);
+  pointer-events: none;
+}
+.arth-lang-check { animation: arth-check-in .3s cubic-bezier(.3, 1.5, .5, 1) both; }
+@keyframes arth-check-in { from { transform: scale(0); } to { transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .arth-nav-thumb, .arth-lang-thumb { transition: none; }
+  .arth-nav-thumb > span, .arth-lang-check { animation: none; }
+  .arth-nav-tab:active .arth-nav-icon { transform: none; }
+}
+@media (max-width: 340px) {
+  .arth-nav-label { font-size: 11px; }
+  .arth-nav-micslot { width: 62px; }
+}
