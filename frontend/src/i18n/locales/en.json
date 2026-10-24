@@ -64,7 +64,9 @@
     "label": "Label",
     "kagaz": "Kagaz",
     "schemes": "Schemes",
-    "mic": "Ask by voice"
+    "mic": "Ask by voice",
+    "speak": "Speak",
+    "main": "Main"
   },
   "login": {
     "taglines": ["Today's farm work, in your language.", "आज का खेती का काम, आपकी भाषा में।", "आजचं शेतीचं काम, तुमच्या भाषेत."],
