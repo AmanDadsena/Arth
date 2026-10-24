@@ -1,0 +1,36 @@
+import { http } from 'msw'
+import { resolveMock } from './resolve'
+
+/** Dev-time MSW handlers — every endpoint delegates to the shared resolver. */
+
+async function readBody(request: Request): Promise<unknown> {
+  if (request.method === 'GET' || request.method === 'DELETE') return undefined
+  const type = request.headers.get('content-type') ?? ''
+  if (type.includes('multipart/form-data')) return request.formData()
+  if (type.includes('application/json')) return request.json()
+  return undefined
+}
+
+const ROUTES: [keyof typeof http, string][] = [
+  ['get', '/farmer/me'],
+  ['put', '/farmer/me'],
+  ['delete', '/farmer/me'],
+  ['get', '/brief'],
+  ['get', '/weather'],
+  ['get', '/mandi/prices'],
+  ['post', '/mandi/sell-advice'],
+  ['post', '/ai/crop-doctor'],
+  ['post', '/ai/label-reader'],
+  ['post', '/ai/explain-document'],
+  ['post', '/ai/voice'],
+  ['get', '/calendar'],
+  ['post', '/schemes/match'],
+]
+
+export const handlers = ROUTES.map(([method, path]) => {
+  const make = http[method] as typeof http.get
+  return make(`*${path}`, async ({ request }) => {
+    const url = new URL(request.url)
+    return resolveMock(request.method, path + url.search, await readBody(request))
+  })
+})
