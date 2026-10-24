@@ -26,14 +26,14 @@ real and current.
 
 | Component / Model | Role in Arth / Sahayak | License |
 | :--- | :--- | :--- |
-| **Google Gemma 4 (4B / 12B Multimodal)** | On-device multimodal vision (pesticide/form reading) & local-language reasoning | **Apache 2.0** (Open-Weight) |
+| **Google Gemma 2B (Multimodal / E2B)** | On-device multimodal vision (pesticide/form reading) & local-language reasoning | **Apache 2.0** (Open-Weight) |
 | **Ollama / Gemini API** | Local model harness & inference runtime | **MIT License** |
 | **Web Speech API (`localService` TTS)** | 100% offline Marathi (`mr-IN`), Hindi (`hi-IN`), and English speech synthesis | **W3C Standard / OS Native** |
 | **PyAV & faster-whisper** | In-memory 16 kHz audio resampling & speech-to-text fallback engine | **BSD-3-Clause / MIT** |
-| **On-Device Regex & OCR Scrubber** | Client-side PII redaction (`[Aadhaar Redacted]`, `[PAN Redacted]`) prior to sync | **MIT License (Project Code)** |
-| **React 19 + TypeScript + Tailwind CSS** | Offline-first PWA frontend & local queue UI (adapted from Rutu design tokens) | **MIT License** |
-| **FastAPI / AWS Lambda (`arth-offline-sync`)** | Serverless Python 3.12/3.14 cloud sync webhook for PII-redacted JSON batches & REST API | **MIT License (Project Code)** |
-| **SQLite (AES-256-GCM)** | Row-bound encrypted local storage with HMAC indexing & 30-day auto-TTL | **Public Domain / Apache 2.0** |
+| **On-Device Regex & OCR Scrubber** | Client-side PII redaction (`[Aadhaar Redacted]`, `[PAN Redacted]`) prior to sync | **Apache 2.0 (Project Code)** |
+| **React 19 + TypeScript + Tailwind CSS** | Offline-first PWA frontend & local queue UI (adapted from Rutu design tokens) | **Apache 2.0 (Project Code)** |
+| **FastAPI / AWS Lambda (`arth-offline-sync`)** | Serverless Python 3.12/3.14 cloud sync webhook for PII-redacted JSON batches & REST API | **Apache 2.0 (Project Code)** |
+| **SQLite (AES-256-GCM)** | Row-bound encrypted local storage with HMAC indexing & 30-day auto-TTL | **Apache 2.0 (Project Code) / Public Domain** |
 | **Open-Meteo & Agmarknet API** | Live 7-day weather forecasting, geocoding & APMC mandi commodity prices | **CC BY 4.0 / GODL India** |
 
 ---
