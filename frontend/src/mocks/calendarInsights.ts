@@ -1,17 +1,506 @@
-import type { Lang, Season, WeatherDay, WhyNow } from '@/lib/api/types'
+import type { Lang, NewsItem, Season, WeatherDay, WhyNow } from '@/lib/api/types'
 
 /**
  * "Why sow this crop now" for the crop calendar: signals from the live
  * forecast, from mandi price trends, and real dated news with sources.
  * Owned by the calendar feature; the mock resolver calls it for GET /calendar.
+ *
+ * Weather and price lines are computed from whatever the caller passes (empty
+ * forecast / empty price map → no lines). Market facts and news are a curated,
+ * dated table: every item below was checked against its publisher's page on
+ * 2026-10-24. Never add an item that hasn't been read at its URL.
  */
 export interface InsightContext {
   /** next days of forecast for the farmer's location (live when online) */
   forecast: WeatherDay[]
   /** 7-day mandi price change in % by commodity id, e.g. { onion: 1.7 } */
   priceChangePct: Record<string, number>
+  /** "now" for picking forecast days and hiding off-season weather; defaults to the current date */
+  today?: Date
 }
 
-export function whyNowFor(_crop: string, _season: Season, _lang: Lang, _ctx: InsightContext): WhyNow {
-  return { weather: [], market: [], news: [] }
+type T3 = Record<Lang, string>
+
+const pick = (t: T3, lang: Lang) => t[lang] ?? t.en
+const fill = (s: string, vars: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (_, k: string) => String(vars[k] ?? ''))
+
+// ---- crop facts ------------------------------------------------------------
+
+/**
+ * How a crop gets its sowing water, which decides how a rainy or dry week reads:
+ * rainfed = needs monsoon rain to sow (soybean), residual = sown on stored soil
+ * moisture (gram), irrigated = sown/transplanted with assured water.
+ */
+type WaterMode = 'rainfed' | 'residual' | 'irrigated'
+
+interface CropFacts {
+  name: T3
+  water: WaterMode
+  /** daily mean temperature (°C) at which the seed sprouts / transplants establish best */
+  germC: [number, number]
+  /** months (1–12) in which the sowing window is near or open — live weather is only shown then */
+  sowMonths: number[]
+  /** what to do when the week is warmer than the range */
+  warmHint?: T3
+}
+
+const CROPS: Record<string, CropFacts> = {
+  onion: {
+    name: { en: 'onion', hi: 'प्याज़', mr: 'कांदा' },
+    water: 'irrigated',
+    germC: [15, 28],
+    sowMonths: [10, 11, 12],
+  },
+  wheat: {
+    name: { en: 'wheat', hi: 'गेहूँ', mr: 'गहू' },
+    water: 'irrigated',
+    germC: [15, 23],
+    sowMonths: [10, 11],
+    warmHint: {
+      en: 'sow when nights cool, usually early to mid November',
+      hi: 'रातें ठंडी होने पर बोएँ, आमतौर पर नवंबर की शुरुआत से मध्य तक',
+      mr: 'रात्री थंड झाल्यावर पेरा, साधारण नोव्हेंबरच्या सुरुवातीपासून मध्यापर्यंत',
+    },
+  },
+  gram: {
+    name: { en: 'gram', hi: 'चना', mr: 'हरभरा' },
+    water: 'residual',
+    germC: [18, 28],
+    sowMonths: [10, 11],
+  },
+  soybean: {
+    name: { en: 'soybean', hi: 'सोयाबीन', mr: 'सोयाबीन' },
+    water: 'rainfed',
+    germC: [22, 32],
+    sowMonths: [6, 7],
+  },
+  tomato: {
+    name: { en: 'tomato', hi: 'टमाटर', mr: 'टोमॅटो' },
+    water: 'irrigated',
+    germC: [18, 30],
+    sowMonths: [6, 7],
+  },
+  watermelon: {
+    name: { en: 'watermelon', hi: 'तरबूज़', mr: 'कलिंगड' },
+    water: 'irrigated',
+    germC: [21, 35],
+    sowMonths: [1, 2],
+  },
+}
+
+// ---- weather lines -----------------------------------------------------------
+
+type RainBand = 'dry' | 'light' | 'good' | 'wet'
+
+const RAIN: Record<WaterMode, Record<RainBand, T3>> = {
+  rainfed: {
+    dry: {
+      en: 'Only {mm} mm rain in the next {n} days — not enough to sow {crop}; wait until 75–100 mm has fallen',
+      hi: 'अगले {n} दिनों में सिर्फ़ {mm} मिमी बारिश — {crop} बोने के लिए काफ़ी नहीं; 75–100 मिमी बारिश होने तक रुकें',
+      mr: 'पुढील {n} दिवसांत फक्त {mm} मिमी पाऊस — {crop} पेरणीसाठी पुरेसा नाही; 75–100 मिमी पाऊस होईपर्यंत थांबा',
+    },
+    light: {
+      en: 'Light rain ({mm} mm) in the next {n} days — keep waiting until 75–100 mm in total before sowing {crop}',
+      hi: 'अगले {n} दिनों में हल्की बारिश ({mm} मिमी) — कुल 75–100 मिमी होने तक {crop} की बुवाई रोकें',
+      mr: 'पुढील {n} दिवसांत हलका पाऊस ({mm} मिमी) — एकूण 75–100 मिमी होईपर्यंत {crop} पेरणी थांबवा',
+    },
+    good: {
+      en: '{mm} mm rain expected in {n} days — once the soil is wet a hand deep, {crop} sowing can begin',
+      hi: '{n} दिनों में {mm} मिमी बारिश की उम्मीद — मिट्टी एक बित्ता गीली होते ही {crop} की बुवाई शुरू करें',
+      mr: '{n} दिवसांत {mm} मिमी पावसाचा अंदाज — माती वीतभर ओली झाली की {crop} पेरणी सुरू करा',
+    },
+    wet: {
+      en: 'Very wet week ahead ({mm} mm) — let the field drain before sowing; standing water rots {crop} seed',
+      hi: 'बहुत बारिश वाला हफ़्ता ({mm} मिमी) — बुवाई से पहले पानी निकलने दें; रुका पानी {crop} का बीज सड़ा देता है',
+      mr: 'खूप पावसाचा आठवडा ({mm} मिमी) — पेरणीपूर्वी पाण्याचा निचरा होऊ द्या; साचलेल्या पाण्यात {crop} बियाणे सडते',
+    },
+  },
+  residual: {
+    dry: {
+      en: 'Dry days ahead ({mm} mm rain) — sow {crop} soon while the soil still holds moisture, or give one light watering first',
+      hi: 'आगे सूखे दिन ({mm} मिमी बारिश) — मिट्टी में नमी रहते {crop} जल्दी बोएँ, या पहले एक हल्की सिंचाई दें',
+      mr: 'पुढे कोरडे दिवस ({mm} मिमी पाऊस) — जमिनीत ओल असतानाच {crop} लवकर पेरा, किंवा आधी एक हलके पाणी द्या',
+    },
+    light: {
+      en: 'Light rain ({mm} mm) in the next {n} days will help {crop} sprout — sow into the moist soil',
+      hi: 'अगले {n} दिनों में हल्की बारिश ({mm} मिमी) {crop} के अंकुरण में मदद करेगी — नम मिट्टी में बोएँ',
+      mr: 'पुढील {n} दिवसांतील हलका पाऊस ({mm} मिमी) {crop} पिकाच्या उगवणीस मदत करेल — ओलसर जमिनीत पेरा',
+    },
+    good: {
+      en: '{mm} mm rain expected in {n} days — sow {crop} 2–3 days after it stops, when the soil can be worked',
+      hi: '{n} दिनों में {mm} मिमी बारिश की उम्मीद — रुकने के 2–3 दिन बाद, मिट्टी वाफ़सा आने पर {crop} बोएँ',
+      mr: '{n} दिवसांत {mm} मिमी पावसाचा अंदाज — पाऊस थांबल्यावर 2–3 दिवसांनी, वाफसा आल्यावर {crop} पेरा',
+    },
+    wet: {
+      en: 'Very wet week ahead ({mm} mm) — wait for the field to dry; {crop} does not like waterlogging',
+      hi: 'बहुत बारिश वाला हफ़्ता ({mm} मिमी) — खेत सूखने दें; {crop} को जलभराव पसंद नहीं',
+      mr: 'खूप पावसाचा आठवडा ({mm} मिमी) — शेत सुकू द्या; {crop} पिकाला पाणी साचलेले चालत नाही',
+    },
+  },
+  irrigated: {
+    dry: {
+      en: 'Dry days ahead ({mm} mm rain) — good for field preparation; plan watering right after sowing {crop}',
+      hi: 'आगे सूखे दिन ({mm} मिमी बारिश) — खेत तैयारी के लिए अच्छा; {crop} बोने के तुरंत बाद सिंचाई की योजना रखें',
+      mr: 'पुढे कोरडे दिवस ({mm} मिमी पाऊस) — शेत तयारीसाठी चांगले; {crop} लागवडीनंतर लगेच पाण्याचे नियोजन ठेवा',
+    },
+    light: {
+      en: 'Light rain ({mm} mm) in the next {n} days — saves one watering; carry on with field preparation for {crop}',
+      hi: 'अगले {n} दिनों में हल्की बारिश ({mm} मिमी) — एक सिंचाई बचेगी; {crop} के लिए खेत की तैयारी जारी रखें',
+      mr: 'पुढील {n} दिवसांत हलका पाऊस ({mm} मिमी) — एक पाणी वाचेल; {crop} पिकासाठी शेत तयारी सुरू ठेवा',
+    },
+    good: {
+      en: '{mm} mm rain expected in {n} days — fills the soil; sow {crop} once the field is dry enough to work',
+      hi: '{n} दिनों में {mm} मिमी बारिश की उम्मीद — मिट्टी में भरपूर नमी; खेत में काम लायक सूखने पर {crop} बोएँ',
+      mr: '{n} दिवसांत {mm} मिमी पावसाचा अंदाज — जमिनीत भरपूर ओल; वाफसा आल्यावर {crop} लागवड करा',
+    },
+    wet: {
+      en: 'Very wet week ahead ({mm} mm) — risk of waterlogging and fungus; delay {crop} sowing until the field drains',
+      hi: 'बहुत बारिश वाला हफ़्ता ({mm} मिमी) — जलभराव और फफूंद का ख़तरा; पानी निकलने तक {crop} की बुवाई टालें',
+      mr: 'खूप पावसाचा आठवडा ({mm} मिमी) — पाणी साचणे व बुरशीचा धोका; निचरा होईपर्यंत {crop} लागवड पुढे ढकला',
+    },
+  },
+}
+
+const HEAVY: T3 = {
+  en: 'Heavy rain ({mm} mm) expected on {date} — hold {crop} sowing until it passes and the field drains',
+  hi: '{date} को भारी बारिश ({mm} मिमी) की संभावना — बारिश थमने और पानी निकलने तक {crop} की बुवाई रोकें',
+  mr: '{date} रोजी जोरदार पावसाचा ({mm} मिमी) अंदाज — पाऊस थांबून निचरा होईपर्यंत {crop} पेरणी थांबवा',
+}
+
+const TEMP: Record<'fit' | 'warm' | 'cool', T3> = {
+  fit: {
+    en: 'Days {max}°C, nights {min}°C — right for {crop}, which sprouts best at an average {lo}–{hi}°C',
+    hi: 'दिन {max}°C, रातें {min}°C — {crop} के लिए सही, जो औसत {lo}–{hi}°C पर सबसे अच्छा उगता है',
+    mr: 'दिवसा {max}°C, रात्री {min}°C — {crop} पिकासाठी योग्य; सरासरी {lo}–{hi}°C ला उगवण उत्तम होते',
+  },
+  warm: {
+    en: 'Still warm (days {max}°C, nights {min}°C) — above the {lo}–{hi}°C {crop} likes; {hint}',
+    hi: 'अभी गर्मी है (दिन {max}°C, रातें {min}°C) — {crop} को {lo}–{hi}°C पसंद है; {hint}',
+    mr: 'अजून उष्णता आहे (दिवसा {max}°C, रात्री {min}°C) — {crop} पिकाला {lo}–{hi}°C आवडते; {hint}',
+  },
+  cool: {
+    en: 'Cool (days {max}°C, nights {min}°C) — below the {lo}–{hi}°C {crop} needs, so it will sprout slowly; {hint}',
+    hi: 'ठंडक है (दिन {max}°C, रातें {min}°C) — {crop} को {lo}–{hi}°C चाहिए, अंकुरण धीमा होगा; {hint}',
+    mr: 'गारवा आहे (दिवसा {max}°C, रात्री {min}°C) — {crop} पिकाला {lo}–{hi}°C लागते, उगवण उशिरा होईल; {hint}',
+  },
+}
+
+const WARM_HINT: T3 = {
+  en: 'sow a few days later or water in the evening',
+  hi: 'कुछ दिन बाद बोएँ या शाम को सिंचाई करें',
+  mr: 'काही दिवस उशिरा पेरा किंवा संध्याकाळी पाणी द्या',
+}
+const COOL_HINT: T3 = {
+  en: 'wait for warmer days or use mulch',
+  hi: 'गर्म दिनों का इंतज़ार करें या मल्च लगाएँ',
+  mr: 'उबदार दिवसांची वाट पहा किंवा आच्छादन वापरा',
+}
+
+const LOCALE: Record<Lang, string> = { en: 'en-IN', hi: 'hi-IN', mr: 'mr-IN' }
+
+function isoDay(d: Date) {
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+}
+
+function shortDate(iso: string, lang: Lang) {
+  const d = new Date(iso + 'T00:00:00')
+  if (Number.isNaN(d.getTime())) return iso
+  return new Intl.DateTimeFormat(LOCALE[lang], { day: 'numeric', month: 'short', numberingSystem: 'latn' }).format(d)
+}
+
+const num = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n)
+
+/** the coming days of the forecast, from today (falls back to the first days if all are in the past) */
+function nextDays(forecast: WeatherDay[], today: Date, n = 7) {
+  const valid = (forecast ?? []).filter((d) => d && typeof d.date === 'string')
+  const t = isoDay(today)
+  const ahead = valid.filter((d) => d.date.slice(0, 10) >= t)
+  return (ahead.length ? ahead : valid).slice(0, n)
+}
+
+function weatherLines(crop: string, lang: Lang, ctx: InsightContext, today: Date): string[] {
+  const facts = CROPS[crop]
+  if (!facts) return []
+  // months away from sowing, this week's weather says nothing about the crop
+  const month = today.getMonth() + 1
+  if (!facts.sowMonths.includes(month)) return []
+
+  const days = nextDays(ctx.forecast, today)
+  if (!days.length) return []
+  const name = pick(facts.name, lang)
+  const lines: string[] = []
+
+  const rains = days.map((d) => (num(d.rainMm) ? Math.max(0, d.rainMm) : 0))
+  const total = Math.round(rains.reduce((a, b) => a + b, 0))
+  const n = days.length
+
+  // a single heavy day in the next 5 days decides the advice
+  const heavyIdx = rains.slice(0, 5).findIndex((mm) => mm >= 25)
+  if (heavyIdx >= 0) {
+    const day = days[heavyIdx]!
+    lines.push(fill(pick(HEAVY, lang), { mm: Math.round(rains[heavyIdx]!), date: shortDate(day.date.slice(0, 10), lang), crop: name }))
+  } else {
+    const band: RainBand = total < 5 ? 'dry' : total < 30 ? 'light' : total < 100 ? 'good' : 'wet'
+    lines.push(fill(pick(RAIN[facts.water][band], lang), { mm: total, n, crop: name }))
+  }
+
+  const temps = days.filter((d) => num(d.maxC) && num(d.minC))
+  if (temps.length) {
+    const avg = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length
+    const max = Math.round(avg(temps.map((d) => d.maxC)))
+    const min = Math.round(avg(temps.map((d) => d.minC)))
+    const mean = (max + min) / 2
+    const [lo, hi] = facts.germC
+    const kind = mean > hi ? 'warm' : mean < lo ? 'cool' : 'fit'
+    const hint = kind === 'warm' ? pick(facts.warmHint ?? WARM_HINT, lang) : pick(COOL_HINT, lang)
+    lines.push(fill(pick(TEMP[kind], lang), { max, min, lo, hi, crop: name, hint }))
+  }
+
+  return lines.slice(0, 3)
+}
+
+// ---- market lines ------------------------------------------------------------
+
+const PRICE: Record<'up' | 'down' | 'flat', T3> = {
+  up: {
+    en: '{Crop} mandi prices up {pct}% this past week',
+    hi: '{Crop} के मंडी भाव पिछले हफ़्ते {pct}% बढ़े',
+    mr: '{Crop} बाजारभाव गेल्या आठवड्यात {pct}% वाढले',
+  },
+  down: {
+    en: '{Crop} mandi prices down {pct}% this past week',
+    hi: '{Crop} के मंडी भाव पिछले हफ़्ते {pct}% घटे',
+    mr: '{Crop} बाजारभाव गेल्या आठवड्यात {pct}% घटले',
+  },
+  flat: {
+    en: '{Crop} mandi prices steady this past week ({pct}%)',
+    hi: '{Crop} के मंडी भाव पिछले हफ़्ते स्थिर ({pct}%)',
+    mr: '{Crop} बाजारभाव गेल्या आठवड्यात स्थिर ({pct}%)',
+  },
+}
+
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+
+function priceLine(crop: string, lang: Lang, ctx: InsightContext): string | null {
+  const pct = ctx.priceChangePct?.[crop]
+  if (!num(pct)) return null
+  const name = CROPS[crop] ? pick(CROPS[crop].name, lang) : crop
+  const dir = pct >= 0.5 ? 'up' : pct <= -0.5 ? 'down' : 'flat'
+  const shown = dir === 'flat' ? (pct > 0 ? '+' : '') + pct.toFixed(1) : Math.abs(pct).toFixed(1)
+  return fill(pick(PRICE[dir], lang), { Crop: lang === 'en' ? cap(name) : name, pct: shown })
+}
+
+interface Fact {
+  /** the date the figure was announced / observed */
+  date: string
+  text: T3
+}
+
+/** curated, dated market facts (MSP decisions, mandi reports) — each sourced in NEWS below */
+const MARKET: Record<Season, Record<string, Fact[]>> = {
+  rabi: {
+    onion: [
+      {
+        // Free Press Journal, 2026-10-21
+        date: '2026-10-21',
+        text: {
+          en: 'Lasalgaon onion average rose from ₹3,351 to ₹4,050/quintal (10–19 Oct 2026) as old stocks run low',
+          hi: 'लासलगांव में प्याज़ का औसत भाव ₹3,351 से ₹4,050/क्विंटल हुआ (10–19 अक्टूबर 2026), पुराना स्टॉक कम',
+          mr: 'लासलगावला कांद्याचा सरासरी भाव ₹3,351 वरून ₹4,050/क्विंटल (10–19 ऑक्टोबर 2026); जुना साठा संपत आला',
+        },
+      },
+    ],
+    wheat: [
+      {
+        // Union Cabinet, 2026-09-30 (DT Next / PTI, News On AIR)
+        date: '2026-09-30',
+        text: {
+          en: 'Wheat MSP for 2027-28: ₹2,610/quintal — up only ₹25',
+          hi: 'गेहूँ का MSP 2027-28: ₹2,610/क्विंटल — सिर्फ़ ₹25 की बढ़ोतरी',
+          mr: 'गव्हाचा हमीभाव 2027-28: ₹2,610/क्विंटल — फक्त ₹25 वाढ',
+        },
+      },
+    ],
+    gram: [
+      {
+        date: '2026-09-30',
+        text: {
+          en: 'Gram MSP for 2027-28: ₹5,958/quintal — up ₹83',
+          hi: 'चने का MSP 2027-28: ₹5,958/क्विंटल — ₹83 की बढ़ोतरी',
+          mr: 'हरभऱ्याचा हमीभाव 2027-28: ₹5,958/क्विंटल — ₹83 वाढ',
+        },
+      },
+    ],
+  },
+  kharif: {
+    soybean: [
+      {
+        // Union Cabinet, 2026-05-13 (Deccan Chronicle)
+        date: '2026-05-13',
+        text: {
+          en: 'Soybean MSP for 2026-27: ₹5,708/quintal — up ₹380',
+          hi: 'सोयाबीन का MSP 2026-27: ₹5,708/क्विंटल — ₹380 की बढ़ोतरी',
+          mr: 'सोयाबीनचा हमीभाव 2026-27: ₹5,708/क्विंटल — ₹380 वाढ',
+        },
+      },
+    ],
+  },
+  zaid: {},
+}
+
+// ---- news ------------------------------------------------------------------
+
+interface NewsSeed {
+  date: string
+  source: string
+  url: string
+  headline: T3
+}
+
+const N = {
+  onionRise: {
+    date: '2026-10-21',
+    source: 'Free Press Journal',
+    url: 'https://www.freepressjournal.in/pune/nashik-onion-prices-rise-700-per-quintal-in-a-week-as-fresh-arrivals-are-delayed',
+    headline: {
+      en: 'Nashik: Onion prices rise ₹700 per quintal in a week as fresh arrivals are delayed',
+      hi: 'नासिक: नई आवक में देरी से प्याज़ एक हफ़्ते में ₹700 प्रति क्विंटल महँगा',
+      mr: 'नाशिक: नवी आवक लांबल्याने कांदा आठवड्यात क्विंटलमागे ₹700 ने महाग',
+    },
+  },
+  onionPressure: {
+    date: '2026-10-06',
+    source: 'Free Press Journal',
+    url: 'https://www.freepressjournal.in/pune/nashik-egyptian-onions-fresh-kharif-arrivals-put-pressure-on-onion-prices',
+    headline: {
+      en: 'Nashik: Egyptian onions, fresh kharif arrivals put pressure on onion prices',
+      hi: 'नासिक: मिस्र का प्याज़ और नई खरीफ़ आवक से भावों पर दबाव',
+      mr: 'नाशिक: इजिप्तचा कांदा आणि नव्या खरीप आवकेमुळे भावांवर दबाव',
+    },
+  },
+  reservoirs: {
+    date: '2026-10-19',
+    source: 'Down To Earth',
+    url: 'https://www.downtoearth.org.in/water/indias-reservoirs-remain-31-below-full-capacity-after-monsoon-southern-states-face-water-shortages',
+    headline: {
+      en: "India's reservoirs remain 31% below full capacity after monsoon; Jayakwadi and Ujani far below normal",
+      hi: 'मानसून के बाद भी देश के जलाशय 31% खाली; जायकवाड़ी और उजनी सामान्य से बहुत नीचे',
+      mr: 'पावसाळ्यानंतरही देशातील धरणे 31% रिकामी; जायकवाडी व उजनी सामान्यपेक्षा खूप खाली',
+    },
+  },
+  drought: {
+    date: '2026-09-26',
+    source: 'Down To Earth',
+    url: 'https://www.downtoearth.org.in/natural-disasters/maharashtra-declares-drought-in-265-talukas-as-crop-losses-mount-after-weak-monsoon',
+    headline: {
+      en: 'Maharashtra declares drought in 265 talukas as crop losses mount after weak monsoon',
+      hi: 'कमज़ोर मानसून से फ़सल नुकसान बढ़ा, महाराष्ट्र के 265 तालुकों में सूखा घोषित',
+      mr: 'कमकुवत पावसाने पिकांचे नुकसान; राज्यातील 265 तालुक्यांत दुष्काळ जाहीर',
+    },
+  },
+  rabiMspAir: {
+    date: '2026-10-01',
+    source: 'News On AIR',
+    url: 'https://newsonair.gov.in/union-cabinet-hikes-minimum-support-prices-for-rabi-crops-for-2027-28-marketing-season/',
+    headline: {
+      en: 'Union Cabinet hikes Minimum Support Prices for rabi crops for 2027-28 marketing season',
+      hi: 'केंद्रीय मंत्रिमंडल ने 2027-28 के लिए रबी फ़सलों का न्यूनतम समर्थन मूल्य बढ़ाया',
+      mr: 'केंद्रीय मंत्रिमंडळाने 2027-28 साठी रब्बी पिकांचे हमीभाव वाढवले',
+    },
+  },
+  rabiMspPti: {
+    date: '2026-09-30',
+    source: 'DT Next (PTI)',
+    url: 'https://www.dtnext.in/news/business/centre-raises-wheat-msp-by-rs-25-to-rs-2610quintal-pulses-oilseeds-get-bigger-hike-for-2027-28',
+    headline: {
+      en: 'Centre raises wheat MSP by ₹25 to ₹2,610/quintal; pulses, oilseeds get bigger hike for 2027-28',
+      hi: 'गेहूँ का MSP ₹25 बढ़कर ₹2,610/क्विंटल; दालों और तिलहन को 2027-28 में ज़्यादा बढ़ोतरी',
+      mr: 'गव्हाचा हमीभाव ₹25 ने वाढून ₹2,610/क्विंटल; डाळी व तेलबियांना 2027-28 साठी जास्त वाढ',
+    },
+  },
+  elNino: {
+    date: '2026-09-04',
+    source: 'Business Today',
+    url: 'https://www.businesstoday.in/india/story/wmo-warns-el-nino-could-intensify-through-february-2027-what-it-means-for-india-check-here-553402-2026-09-04',
+    headline: {
+      en: 'WMO warns El Niño could intensify through February 2027: what it means for India',
+      hi: 'WMO की चेतावनी: अल नीनो फ़रवरी 2027 तक तेज़ हो सकता है — भारत पर क्या असर',
+      mr: 'WMO चा इशारा: एल निनो फेब्रुवारी 2027 पर्यंत तीव्र होऊ शकतो — भारतावर काय परिणाम',
+    },
+  },
+  kharifMsp: {
+    date: '2026-05-13',
+    source: 'Deccan Chronicle',
+    url: 'https://deccanchronicle.com/nation/centre-raises-msp-for-14-kharif-crops-1956491',
+    headline: {
+      en: 'Centre raises MSP for 14 kharif crops; soybean at ₹5,708/quintal',
+      hi: 'केंद्र ने 14 खरीफ़ फ़सलों का MSP बढ़ाया; सोयाबीन ₹5,708/क्विंटल',
+      mr: 'केंद्राने 14 खरीप पिकांचे हमीभाव वाढवले; सोयाबीन ₹5,708/क्विंटल',
+    },
+  },
+  imdApril: {
+    date: '2026-04-15',
+    source: 'The Week',
+    url: 'https://www.theweek.in/news/india/2026/04/15/2026-southwest-monsoon-warning.html',
+    headline: {
+      en: 'Is El Niño back? IMD warns of dry summer and below-normal southwest monsoon',
+      hi: 'क्या अल नीनो लौट आया? IMD ने सूखी गर्मी और सामान्य से कम मानसून की चेतावनी दी',
+      mr: 'एल निनो परतला? IMD चा कोरड्या उन्हाळ्याचा आणि सरासरीपेक्षा कमी मान्सूनचा इशारा',
+    },
+  },
+  monsoonSwing: {
+    date: '2026-09-02',
+    source: 'The Week',
+    url: 'https://www.theweek.in/news/india/2026/09/02/maharashtra-monsoon-september-forecast-rainfall-deficit.html',
+    headline: {
+      en: "From 40% surplus to 46% deficit: Maharashtra's monsoon swings sharply, raising water and farm concerns",
+      hi: '40% ज़्यादा से 46% कम: महाराष्ट्र में मानसून का बड़ा उतार-चढ़ाव, पानी और खेती की चिंता',
+      mr: '40% जास्त ते 46% कमी: राज्यात पावसाचा मोठा चढउतार, पाणी आणि शेतीची चिंता',
+    },
+  },
+} satisfies Record<string, NewsSeed>
+
+/** news per season and crop — real, dated, read at the URL */
+const NEWS: Record<Season, Record<string, NewsSeed[]>> = {
+  rabi: {
+    onion: [N.onionRise, N.reservoirs, N.onionPressure],
+    wheat: [N.reservoirs, N.rabiMspPti, N.elNino],
+    gram: [N.reservoirs, N.rabiMspAir, N.drought],
+  },
+  kharif: {
+    soybean: [N.drought, N.kharifMsp, N.imdApril],
+    tomato: [N.monsoonSwing, N.imdApril],
+  },
+  zaid: {
+    watermelon: [N.reservoirs, N.elNino],
+  },
+}
+
+function newsFor(crop: string, season: Season, lang: Lang, today: Date): NewsItem[] {
+  const t = isoDay(today)
+  return (NEWS[season]?.[crop] ?? [])
+    .filter((n) => n.date <= t)
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 3)
+    .map((n) => ({ headline: pick(n.headline, lang), source: n.source, url: n.url, date: n.date }))
+}
+
+function marketLines(crop: string, season: Season, lang: Lang, ctx: InsightContext, today: Date): string[] {
+  const t = isoDay(today)
+  const live = priceLine(crop, lang, ctx)
+  const facts = (MARKET[season]?.[crop] ?? []).filter((f) => f.date <= t).map((f) => pick(f.text, lang))
+  return [...(live ? [live] : []), ...facts].slice(0, 3)
+}
+
+// ---- entry point -------------------------------------------------------------
+
+export function whyNowFor(crop: string, season: Season, lang: Lang, ctx: InsightContext): WhyNow {
+  const today = ctx?.today ?? new Date()
+  const safe: InsightContext = { forecast: Array.isArray(ctx?.forecast) ? ctx.forecast : [], priceChangePct: ctx?.priceChangePct ?? {}, today }
+  return {
+    weather: weatherLines(crop, lang, safe, today),
+    market: marketLines(crop, season, lang, safe, today),
+    news: newsFor(crop, season, lang, today),
+  }
 }

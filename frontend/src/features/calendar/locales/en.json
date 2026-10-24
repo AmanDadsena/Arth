@@ -2,14 +2,26 @@
   "title": "Crop calendar",
   "subtitle": "What to sow this season, week by week",
   "season": "Season",
-  "seasons": { "kharif": "Kharif", "rabi": "Rabi", "zaid": "Summer" },
-  "seasonMonths": { "kharif": "Jun – Sep", "rabi": "Oct – Feb", "zaid": "Mar – May" },
+  "seasons": {
+    "kharif": "Kharif",
+    "rabi": "Rabi",
+    "zaid": "Summer"
+  },
+  "seasonMonths": {
+    "kharif": "Jun – Sep",
+    "rabi": "Oct – Feb",
+    "zaid": "Mar – May"
+  },
   "now": "Now",
   "yourFarm": "Your farm",
   "soilChip": "{{soil}} soil",
   "editFarm": "Change",
   "recommended": "Good crops for you",
-  "suitability": { "high": "Very suitable", "medium": "Suitable", "low": "Less suitable" },
+  "suitability": {
+    "high": "Very suitable",
+    "medium": "Suitable",
+    "low": "Less suitable"
+  },
   "sowing": "Sowing",
   "duration": "{{days}} days",
   "durationLabel": "Crop duration",
@@ -24,5 +36,14 @@
   "emptyBody": "We have no recommendations for this season on your soil and water. Try another season or ask an expert.",
   "planEmpty": "The weekly plan for this crop isn't ready yet.",
   "expertReason": "Seed variety, fertiliser and spray doses depend on your field. Check with Kisan Call Centre or your local agriculture officer before buying.",
-  "basedOn": "Based on your soil and water from Profile"
+  "basedOn": "Based on your soil and water from Profile",
+  "whyNow": {
+    "teaser": "Why now",
+    "title": "Why sow this now",
+    "weather": "Weather",
+    "market": "Market",
+    "news": "In the news",
+    "readMore": "Opens {{source}} in a new tab",
+    "footnote": "Weather updates live; news from the sources shown."
+  }
 }

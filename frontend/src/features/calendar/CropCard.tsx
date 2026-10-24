@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Badge, Icon } from '@/components/ui'
 import type { CropRecommendation } from '@/lib/api/types'
 import { fmtDate, useLang } from '@/i18n'
+import { WhyNowTeaser } from './WhyNow'
 
 export const SUIT_TONE = { high: 'grow', medium: 'amber', low: 'neutral' } as const
 
@@ -37,6 +38,8 @@ export function CropCard({ rec, onOpen }: { rec: CropRecommendation; onOpen: () 
       </div>
 
       <p className="mt-3 text-[15px] leading-snug text-ink-2">{rec.why}</p>
+
+      <WhyNowTeaser whyNow={rec.whyNow} />
 
       <span className="mt-3 flex min-h-11 items-center justify-between border-t border-hair pt-2 text-[15px] font-semibold text-grow">
         {t('openPlan')}

@@ -1,10 +1,11 @@
 import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Badge, Card, EmptyState, EscalateCard, EyebrowLabel, Icon, IconButton } from '@/components/ui'
+import { Badge, Card, EmptyState, EscalateCard, EyebrowLabel, Icon, IconButton, SectionHead } from '@/components/ui'
 import type { CropRecommendation } from '@/lib/api/types'
 import { fmtDate, useLang } from '@/i18n'
 import { addDays } from './season'
 import { SUIT_TONE } from './CropCard'
+import { WhyNowSection, hasWhyNow } from './WhyNow'
 
 /** One crop's week-by-week plan: a vertical timeline of dots on a line. */
 export function CropPlan({ rec, onBack }: { rec: CropRecommendation; onBack: () => void }) {
@@ -51,6 +52,9 @@ export function CropPlan({ rec, onBack }: { rec: CropRecommendation; onBack: () 
         </div>
         <p className="mt-3 border-t border-hair pt-3 text-[15px] leading-snug text-ink-2">{rec.why}</p>
       </Card>
+
+      <WhyNowSection whyNow={rec.whyNow} />
+      {hasWhyNow(rec.whyNow) ? <SectionHead>{t('plan')}</SectionHead> : null}
 
       {weeks.length === 0 ? (
         <div className="mt-4">
