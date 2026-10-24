@@ -33,10 +33,27 @@ function initialLang(): Lang {
   return 'mr'
 }
 
-const NAMESPACES = Object.keys(en)
+/**
+ * Feature-owned strings live next to the feature, in
+ * `src/features/<ns>/locales/{en,hi,mr}.json` (and `src/components/voice/locales/`).
+ * Each file is the content of namespace <ns>, picked up here automatically, so
+ * features never edit the shared locale files.
+ */
+type Bundle = Record<string, unknown>
+const featureFiles = import.meta.glob<Bundle>(['../features/*/locales/*.json', '../components/*/locales/*.json'], { eager: true, import: 'default' })
+const resources: Record<Lang, Record<string, Bundle>> = { en: { ...en }, hi: { ...hi }, mr: { ...mr } }
+for (const [path, bundle] of Object.entries(featureFiles)) {
+  const m = path.match(/\/(features|components)\/([^/]+)\/locales\/(en|hi|mr)\.json$/)
+  if (!m) continue
+  const ns = m[2]!
+  const l = m[3] as Lang
+  resources[l][ns] = { ...(resources[l][ns] ?? {}), ...bundle }
+}
+
+const NAMESPACES = Object.keys(resources.en)
 
 void i18n.use(initReactI18next).init({
-  resources: { en, hi, mr },
+  resources,
   lng: initialLang(),
   fallbackLng: 'en',
   ns: NAMESPACES,
