@@ -61,7 +61,9 @@ class FarmerProfileInput(ApiInput):
     # "farmer" means the farmer corrected it in Settings and it is kept as given.
     soil_type: SoilType | None = None
     soil_source: Literal["auto", "farmer"] = "auto"
-    irrigation: Irrigation
+    irrigation: Irrigation  # the main source; with several, the most controlled one
+    # Every source the farmer uses (onboarding is multi-choice). Optional: older profiles lack it.
+    water_sources: list[Irrigation] | None = Field(default=None, max_length=5)
     tank_size_litres: float = Field(gt=0, le=1000)
     consent_at: str | None = Field(default=None, max_length=40)
     # Optional "basic questions" from onboarding (docs/SPEC.md). Older profiles lack them;
@@ -81,7 +83,7 @@ class FarmerProfileInput(ApiInput):
     def _round(cls, v: float) -> float:
         return round_coord(v)
 
-    @field_validator("goals", "sells_at", "livestock")
+    @field_validator("goals", "sells_at", "livestock", "water_sources")
     @classmethod
     def _dedupe(cls, v: list[str] | None) -> list[str] | None:
         return list(dict.fromkeys(v)) if v is not None else None

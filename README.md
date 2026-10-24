@@ -65,7 +65,9 @@ real and current.
    alerts, sprayer tank, optional questions, help, privacy and "about" moved to **Settings**.
 4. **Soil is never asked** (the way Project Rutu does it). From the farm's location Arth finds
    the district, its dominant soil type and its **Soil Health Card** results. Onboarding went
-   from 14 questions to **6** (language, name, place, crops, land, water).
+   from 14 questions to **6** (language, name, place, crops, land, water). The water question
+   takes **several answers** (e.g. rainfed + borewell); advice follows the most controlled
+   source (drip > sprinkler > borewell > canal > rainfed).
 5. **The calendar runs on today's date.** It knows the season, what each of the farmer's crops
    is usually doing this week, which sowing windows are open now and how many days are left,
    and it moves **kharif** windows to the district's own **monsoon onset** from 40 years of IMD

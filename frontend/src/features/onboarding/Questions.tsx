@@ -17,7 +17,7 @@ export interface QuestionProps {
 }
 
 export function QuestionBody(props: QuestionProps) {
-  const { q, draft, set, pick } = props
+  const { q, draft, set } = props
   const { t } = useTranslation('onboarding')
   const { t: tc } = useTranslation('common')
   const head = <QuestionHead glyph={q.glyph} title={t(`q.${q.id}.title`)} why={t(`q.${q.id}.why`)} eyebrow={q.id === 'lang' ? t('welcome') : undefined} />
@@ -84,9 +84,10 @@ export function QuestionBody(props: QuestionProps) {
       return (
         <>
           {head}
-          <Group label={t(`q.${q.id}.title`)}>
+          <MultiHint />
+          <Group label={t(`q.${q.id}.title`)} multi>
             {WATER.map((w) => (
-              <OptionRow key={w.value} glyph={w.glyph} label={tc(`irrigation.${w.value}`)} hint={t(`waterHint.${w.value}`)} on={draft.irrigation === w.value} onClick={() => pick({ irrigation: w.value })} />
+              <OptionRow key={w.value} multi glyph={w.glyph} label={tc(`irrigation.${w.value}`)} hint={t(`waterHint.${w.value}`)} on={draft.water.includes(w.value)} onClick={() => set({ water: toggle(draft.water, w.value) })} />
             ))}
           </Group>
         </>

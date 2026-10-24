@@ -28,7 +28,10 @@ export interface FarmerProfile {
   /** never asked: the backend fills it from the district unless soilSource is 'farmer' */
   soilType: SoilType
   soilSource?: 'auto' | 'farmer'
+  /** the main source, used by the advisories; with several, the most controlled one */
   irrigation: Irrigation
+  /** every source the farmer uses (onboarding is multi-choice); older profiles lack it */
+  waterSources?: Irrigation[]
   tankSizeLitres: number
   consentAt: string | null
   // basic questions asked right after sign-in — all optional, older profiles lack them

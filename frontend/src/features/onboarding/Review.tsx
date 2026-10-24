@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, Icon } from '@/components/ui'
 import { LANGS, useLang } from '@/i18n'
-import { CROPS, DEFAULTS, QUESTIONS, districtLabel, isAnswered, type Draft, type QuestionId } from './model'
+import { CROPS, DEFAULTS, QUESTIONS, WATER, districtLabel, isAnswered, type Draft, type QuestionId } from './model'
 import { Glyph, type GlyphName } from './glyphs'
 
 /**
@@ -45,7 +45,7 @@ export function Review({ draft, onJump, editing }: { draft: Draft; onJump: (id: 
             }
           : { text: t('review.needed'), tone: 'needed' }
       case 'water':
-        return draft.irrigation ? { text: tc(`irrigation.${draft.irrigation}`) } : assumed(tc(`irrigation.${DEFAULTS.irrigation}`))
+        return answered ? { text: draft.water.map((w) => tc(`irrigation.${w}`)).join(', '), glyph: glyphFor(WATER, draft.water[0]) } : assumed(tc(`irrigation.${DEFAULTS.irrigation}`))
     }
   }
 

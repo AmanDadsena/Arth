@@ -35,7 +35,7 @@ export const QUESTIONS: QuestionDef[] = [
   { id: 'where', glyph: 'pin', optional: false, autoAdvance: false },
   { id: 'crops', glyph: 'sprout', optional: false, autoAdvance: false },
   { id: 'land', glyph: 'field', optional: false, autoAdvance: false },
-  { id: 'water', glyph: 'water', optional: false, autoAdvance: true },
+  { id: 'water', glyph: 'water', optional: false, autoAdvance: false },
 ]
 
 /** Index of the summary screen, one past the last question. */
@@ -66,6 +66,13 @@ export const WATER: Opt<Irrigation>[] = [
   { value: 'canal', glyph: 'canal' },
   { value: 'borewell', glyph: 'borewell' },
 ]
+
+/**
+ * The source the advisories go by when a farmer has several: the most controlled
+ * one wins, so "rainfed + borewell" is treated as irrigated.
+ */
+const WATER_PRIORITY: Irrigation[] = ['drip', 'sprinkler', 'borewell', 'canal', 'rainfed']
+export const primaryWater = (list: Irrigation[]): Irrigation | undefined => WATER_PRIORITY.find((w) => list.includes(w))
 
 /** Defaults for what onboarding doesn't ask (water can be skipped; the tank is set in Settings). */
 export const DEFAULTS = { irrigation: 'rainfed' as Irrigation, tankSizeLitres: 15 }
@@ -138,7 +145,8 @@ export interface Draft {
   located: boolean
   crops: string[]
   landAcres: number
-  irrigation?: Irrigation
+  /** every way the farmer waters; several can apply */
+  water: Irrigation[]
 }
 
 export function initialDraft(existing: FarmerProfile | undefined, displayName: string): Draft {
@@ -157,7 +165,7 @@ export function initialDraft(existing: FarmerProfile | undefined, displayName: s
     located: !!existing && (round2(lat) !== round2(centre[0]) || round2(lon) !== round2(centre[1])),
     crops: existing?.crops ?? [],
     landAcres: existing?.landAcres ?? 2,
-    irrigation: existing?.irrigation,
+    water: existing?.waterSources ?? (existing?.irrigation ? [existing.irrigation] : []),
   }
 }
 
@@ -175,7 +183,7 @@ export function isAnswered(id: QuestionId, d: Draft): boolean {
     case 'land':
       return d.landAcres > 0
     case 'water':
-      return d.irrigation !== undefined
+      return d.water.length > 0
   }
 }
 
@@ -185,7 +193,7 @@ export function firstMissing(d: Draft): number {
 }
 
 /** Toggle in a multi-select. */
-export function toggle(list: string[], value: string): string[] {
+export function toggle<T extends string>(list: T[], value: T): T[] {
   return list.includes(value) ? list.filter((x) => x !== value) : [...list, value]
 }
 
@@ -207,7 +215,8 @@ export function toProfileInput(d: Draft, lang: Lang, consentAt: string | null, e
     crops: d.crops,
     landAcres: round2(d.landAcres),
     ...(keepSoil ? { soilType: existing.soilType, soilSource: 'farmer' as const } : { soilSource: 'auto' as const }),
-    irrigation: d.irrigation ?? DEFAULTS.irrigation,
+    irrigation: primaryWater(d.water) ?? DEFAULTS.irrigation,
+    waterSources: d.water.length > 0 ? d.water : existing?.waterSources,
     tankSizeLitres: existing?.tankSizeLitres ?? DEFAULTS.tankSizeLitres,
     consentAt,
     landOwnership: existing?.landOwnership,
