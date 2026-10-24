@@ -1,28 +1,12 @@
 import { useState, type ReactNode } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Icon } from '@/components/ui'
-import { round2 } from '@/lib/api/queries'
+import { api } from '@/lib/api/client'
+import { qk, round2 } from '@/lib/api/queries'
 import { LANGS, useLang } from '@/i18n'
-import {
-  CROPS,
-  DISTRICTS,
-  EXPERIENCE,
-  FARMING,
-  GOALS,
-  LIVESTOCK,
-  OWNERSHIP,
-  SELLS,
-  SOILS,
-  TANKS,
-  WATER,
-  experienceBucket,
-  nearestDistrict,
-  toggle,
-  type Draft,
-  type QuestionDef,
-} from './model'
+import { CROPS, DISTRICTS, WATER, districtLabel, nearestDistrict, toggle, type Draft, type QuestionDef } from './model'
 import { FIELD, Label, OptionRow, OptionTile, QuestionHead } from './parts'
-
 /** The body of one question screen. `pick` answers and moves on; `set` only answers. */
 export interface QuestionProps {
   q: QuestionDef
@@ -96,31 +80,6 @@ export function QuestionBody(props: QuestionProps) {
         </>
       )
 
-    case 'ownership':
-      return (
-        <>
-          {head}
-          <Group label={t(`q.${q.id}.title`)}>
-            {OWNERSHIP.map((o) => (
-              <OptionRow key={o.value} emoji={o.emoji} label={t(`ownership.${o.value}`)} hint={t(`ownershipHint.${o.value}`)} on={draft.landOwnership === o.value} onClick={() => pick({ landOwnership: o.value })} />
-            ))}
-          </Group>
-        </>
-      )
-
-    case 'soil':
-      return (
-        <>
-          {head}
-          <Group label={t(`q.${q.id}.title`)}>
-            {SOILS.map((s) => (
-              <OptionRow key={s.value} swatch={s.swatch} label={tc(`soil.${s.value}`)} hint={t(`soilHint.${s.value}`)} on={draft.soilType === s.value} onClick={() => pick({ soilType: s.value })} />
-            ))}
-          </Group>
-          <SkipNote>{t('soilSkip')}</SkipNote>
-        </>
-      )
-
     case 'water':
       return (
         <>
@@ -133,105 +92,6 @@ export function QuestionBody(props: QuestionProps) {
         </>
       )
 
-    case 'tank':
-      return (
-        <>
-          {head}
-          <div role="radiogroup" aria-label={t(`q.${q.id}.title`)} className="mt-7 grid grid-cols-3 gap-2.5">
-            {TANKS.map((n) => {
-              const on = draft.tankSizeLitres === n
-              return (
-                <button
-                  key={n}
-                  type="button"
-                  role="radio"
-                  aria-checked={on}
-                  onClick={() => pick({ tankSizeLitres: n })}
-                  className={`flex min-h-[84px] flex-col items-center justify-center rounded-[24px] transition motion-safe:active:scale-[.97] ${
-                    on ? 'bg-grow-l text-grow-d ring-2 ring-inset ring-grow' : 'bg-card text-ink active:bg-chip'
-                  }`}
-                >
-                  <span className="num text-[28px] font-semibold leading-none">{n}</span>
-                  <span className="mt-1 text-[14px] text-muted">{tc('units.litres')}</span>
-                </button>
-              )
-            })}
-          </div>
-          <SkipNote>{t('tankHint')}</SkipNote>
-        </>
-      )
-
-    case 'experience': {
-      const cur = experienceBucket(draft.experienceYears)?.id
-      return (
-        <>
-          {head}
-          <Group label={t(`q.${q.id}.title`)}>
-            {EXPERIENCE.map((b) => (
-              <OptionRow key={b.id} emoji={b.emoji} label={t(`experience.${b.id}`)} on={cur === b.id} onClick={() => pick({ experienceYears: b.years })} />
-            ))}
-          </Group>
-        </>
-      )
-    }
-
-    case 'farmingType':
-      return (
-        <>
-          {head}
-          <Group label={t(`q.${q.id}.title`)}>
-            {FARMING.map((f) => (
-              <OptionRow key={f.value} emoji={f.emoji} label={t(`farming.${f.value}`)} hint={t(`farmingHint.${f.value}`)} on={draft.farmingType === f.value} onClick={() => pick({ farmingType: f.value })} />
-            ))}
-          </Group>
-        </>
-      )
-
-    case 'goals':
-      return (
-        <>
-          {head}
-          <MultiHint />
-          <div role="group" aria-label={t(`q.${q.id}.title`)} className="mt-3 grid grid-cols-2 gap-2.5">
-            {GOALS.map((g) => (
-              <OptionTile key={g.value} emoji={g.emoji} label={t(`goals.${g.value}`)} on={draft.goals.includes(g.value)} onClick={() => set({ goals: toggle(draft.goals, g.value) })} />
-            ))}
-          </div>
-        </>
-      )
-
-    case 'sellsAt':
-      return (
-        <>
-          {head}
-          <MultiHint />
-          <Group label={t(`q.${q.id}.title`)} multi>
-            {SELLS.map((s) => (
-              <OptionRow key={s.value} multi emoji={s.emoji} label={t(`sells.${s.value}`)} on={draft.sellsAt.includes(s.value)} onClick={() => set({ sellsAt: toggle(draft.sellsAt, s.value) })} />
-            ))}
-          </Group>
-        </>
-      )
-
-    case 'livestock':
-      return (
-        <>
-          {head}
-          <MultiHint />
-          <Group label={t(`q.${q.id}.title`)} multi>
-            {LIVESTOCK.map((a) => (
-              <OptionRow
-                key={a.value}
-                multi
-                emoji={a.emoji}
-                label={t(`livestock.${a.value}`)}
-                on={draft.livestock.includes(a.value)}
-                onClick={() => set({ livestock: toggle(draft.livestock, a.value, ['none']) })}
-              />
-            ))}
-          </Group>
-        </>
-      )
   }
 }
 
@@ -251,10 +111,6 @@ function MultiHint() {
       {t('multiHint')}
     </div>
   )
-}
-
-function SkipNote({ children }: { children: ReactNode }) {
-  return <p className="mt-3 px-1 text-[14px] leading-snug text-faint">{children}</p>
 }
 
 function PrivacyNote({ children }: { children: ReactNode }) {
@@ -279,8 +135,39 @@ function LangOptions() {
 
 type GeoState = 'idle' | 'locating' | 'denied'
 
+/**
+ * What the location already tells us, so we never ask: the district's soil and
+ * how its Soil Health Card tests came out. Quiet when offline or out of state.
+ */
+function SoilFound({ draft }: { draft: Draft }) {
+  const { t } = useTranslation('onboarding')
+  const { t: tc } = useTranslation('common')
+  const { lang } = useLang()
+  const at = { lat: round2(draft.lat), lon: round2(draft.lon), district: draft.district }
+  const q = useQuery({ queryKey: [...qk.soil(lang, at.lat, at.lon), at.district], queryFn: () => api.getSoil(lang, at), staleTime: Infinity, retry: false })
+  if (!q.data) return null
+  const s = q.data
+  const nLow = s.nitrogen ? Math.round(s.nitrogen.low * 100) : null
+  return (
+    <div role="status" className="mt-4 flex items-start gap-3 rounded-[22px] bg-grow-l px-4 py-3.5">
+      <span className="mt-0.5 flex h-9 w-9 flex-none items-center justify-center rounded-full bg-grow text-white">
+        <Icon name="sprout" size={18} />
+      </span>
+      <span className="min-w-0">
+        <span className="block text-[16px] font-semibold leading-snug text-grow-d">
+          {t('soilFound', { soil: tc(`soil.${s.soilType}`), district: s.districtLocal })}
+        </span>
+        <span className="mt-0.5 block text-[13.5px] leading-snug text-ink-2">
+          {nLow !== null ? t('soilFoundBody', { n: nLow, samples: s.samples.toLocaleString('en-IN') }) : t('soilFoundNoTests')}
+        </span>
+      </span>
+    </div>
+  )
+}
+
 function WhereFields({ draft, set }: { draft: Draft; set: (patch: Partial<Draft>) => void }) {
   const { t } = useTranslation('onboarding')
+  const { lang } = useLang()
   const [geo, setGeo] = useState<GeoState>('idle')
 
   function locate() {
@@ -303,7 +190,7 @@ function WhereFields({ draft, set }: { draft: Draft; set: (patch: Partial<Draft>
   function pickDistrict(d: string) {
     const c = DISTRICTS[d]
     // a picked district only moves the point if the farmer hasn't shared a location
-    set(c && !draft.located ? { district: d, lat: c[0], lon: c[1] } : { district: d })
+    set(c && !draft.located ? { district: d, lat: c.lat, lon: c.lon } : { district: d })
   }
 
   const districts = Object.keys(DISTRICTS)
@@ -326,6 +213,8 @@ function WhereFields({ draft, set }: { draft: Draft; set: (patch: Partial<Draft>
         {geo === 'denied' ? <span className="font-medium text-warn-d">{t('locationDenied')}</span> : t('locationPrivate')}
       </p>
 
+      <SoilFound draft={draft} />
+
       <Label htmlFor="ob-village">{t('village')}</Label>
       <input id="ob-village" className={FIELD} value={draft.village} onChange={(e) => set({ village: e.target.value })} placeholder={t('villagePlaceholder')} autoComplete="address-level3" />
 
@@ -334,7 +223,7 @@ function WhereFields({ draft, set }: { draft: Draft; set: (patch: Partial<Draft>
         <select id="ob-district" className={`${FIELD} appearance-none pr-12`} value={draft.district} onChange={(e) => pickDistrict(e.target.value)}>
           {districts.map((d) => (
             <option key={d} value={d}>
-              {t(`districts.${d}`, { defaultValue: d })}
+              {districtLabel(d, lang)}
             </option>
           ))}
         </select>

@@ -149,12 +149,12 @@ function PrivacyNotice({ open, onClose }: { open: boolean; onClose: () => void }
 
 export default function LoginPage() {
   const { t } = useTranslation('login')
-  const { status, canSignIn, signInWithGoogle, startDemo } = useAuth()
+  const { status, canSignIn, signInWithGoogle } = useAuth()
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<string | null>(null)
   const [privacyOpen, setPrivacyOpen] = useState(false)
 
-  if (status === 'demo' || status === 'signedIn') return <Navigate to="/" replace />
+  if (status === 'signedIn') return <Navigate to="/" replace />
 
   async function google() {
     if (!canSignIn) {
@@ -210,14 +210,6 @@ export default function LoginPage() {
               {note}
             </p>
           ) : null}
-          <button
-            type="button"
-            onClick={startDemo}
-            className="flex h-[54px] w-full items-center justify-center gap-2 rounded-[28px] bg-grow text-[17px] font-semibold text-white active:brightness-90"
-          >
-            <Icon name="sprout" size={20} />
-            {t('demo')}
-          </button>
         </div>
 
         <div className="dawn-up-3 mt-5 flex flex-wrap justify-center gap-2">

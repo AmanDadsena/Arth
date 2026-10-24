@@ -15,15 +15,17 @@ function NewsIcon({ size = 18, className = '' }: { size?: number; className?: st
   )
 }
 
-export const hasWhyNow = (w?: WhyNow): w is WhyNow => !!w && (w.weather.length > 0 || w.market.length > 0 || w.news.length > 0)
+export const hasWhyNow = (w?: WhyNow | null): w is WhyNow =>
+  !!w && (w.weather.length > 0 || w.market.length > 0 || (w.soil?.length ?? 0) > 0 || w.news.length > 0)
 
-/** On a crop card: one weather and one market line. Nothing when there is no signal. */
-export function WhyNowTeaser({ whyNow }: { whyNow?: WhyNow }) {
+/** On a crop card: one weather and one market line (or a soil line). Nothing when there is no signal. */
+export function WhyNowTeaser({ whyNow }: { whyNow?: WhyNow | null }) {
   const { t } = useTranslation('calendar')
   if (!whyNow) return null
   const lines: [IconName, string][] = []
   if (whyNow.weather[0]) lines.push(['weather', whyNow.weather[0]])
   if (whyNow.market[0]) lines.push(['mandi', whyNow.market[0]])
+  if (lines.length < 2 && whyNow.soil?.[0]) lines.push(['sprout', whyNow.soil[0]])
   if (!lines.length) return null
   return (
     <div className="mt-3 rounded-2xl bg-grow-l px-3 py-2.5">
@@ -65,8 +67,8 @@ function Lines({ items }: { items: string[] }) {
   )
 }
 
-/** The full "Why sow this now" block in a crop's plan: weather, market and news groups; empty ones hidden. */
-export function WhyNowSection({ whyNow }: { whyNow?: WhyNow }) {
+/** The full "Why sow this now" block in a crop's plan: weather, market, soil and news groups; empty ones hidden. */
+export function WhyNowSection({ whyNow }: { whyNow?: WhyNow | null }) {
   const { t } = useTranslation('calendar')
   const { lang } = useLang()
   if (!hasWhyNow(whyNow)) return null
@@ -82,6 +84,11 @@ export function WhyNowSection({ whyNow }: { whyNow?: WhyNow }) {
         {whyNow.market.length ? (
           <Group icon={<Icon name="mandi" size={16} />} title={t('whyNow.market')}>
             <Lines items={whyNow.market} />
+          </Group>
+        ) : null}
+        {whyNow.soil?.length ? (
+          <Group icon={<Icon name="sprout" size={16} />} title={t('whyNow.soil')}>
+            <Lines items={whyNow.soil} />
           </Group>
         ) : null}
         {whyNow.news.length ? (

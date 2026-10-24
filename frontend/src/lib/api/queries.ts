@@ -25,6 +25,7 @@ export const qk = {
   weather: (lat: number, lon: number, lang: string) => ['weather', lat, lon, lang] as const,
   mandiPrices: (commodity: string, lat: number, lon: number) => ['mandi', commodity, lat, lon] as const,
   calendar: (season: string, lang: string) => ['calendar', season, lang] as const,
+  soil: (lang: string, lat?: number, lon?: number) => ['soil', lang, lat, lon] as const,
 }
 
 export function isNotFound(err: unknown) {

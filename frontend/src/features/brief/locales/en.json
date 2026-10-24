@@ -27,5 +27,19 @@
     "calendar": "What to sow, when",
     "schemes": "Government schemes",
     "kagaz": "Explain a paper"
-  }
+  },
+  "topJob": "Most important today",
+  "open": "Open",
+  "alsoToday": "Also today",
+  "inField": "Your crops today",
+  "fullCalendar": "Crop calendar",
+  "hero": {
+    "season": "{{season}} season",
+    "daysLeft_one": "{{count}} day left",
+    "daysLeft_other": "{{count}} days left",
+    "next": "Next: {{season}} from {{date}}",
+    "rainToday": "{{p}}% rain today",
+    "noWeather": "Weather will show here when the forecast loads."
+  },
+  "seasons": { "kharif": "Kharif", "rabi": "Rabi", "zaid": "Summer" }
 }

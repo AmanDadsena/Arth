@@ -27,5 +27,19 @@
     "calendar": "क्या, कब बोएँ",
     "schemes": "सरकारी योजनाएँ",
     "kagaz": "काग़ज़ समझें"
-  }
+  },
+  "topJob": "आज का सबसे ज़रूरी काम",
+  "open": "खोलें",
+  "alsoToday": "आज और भी",
+  "inField": "आज आपकी फसलें",
+  "fullCalendar": "फसल कैलेंडर",
+  "hero": {
+    "season": "{{season}} मौसम",
+    "daysLeft_one": "{{count}} दिन बाकी",
+    "daysLeft_other": "{{count}} दिन बाकी",
+    "next": "अगला: {{season}}, {{date}} से",
+    "rainToday": "आज {{p}}% बारिश",
+    "noWeather": "मौसम का अनुमान आते ही यहाँ दिखेगा।"
+  },
+  "seasons": { "kharif": "खरीफ", "rabi": "रबी", "zaid": "ज़ायद" }
 }

@@ -29,23 +29,24 @@ Read sections 1–4 out loud a few times; sections 5–12 are for when the jury 
 
 | Part | Status |
 |---|---|
-| Frontend (all 12 screens, 3 languages, voice, offline) | Done, works fully in **demo mode** with no internet |
-| Backend (teammate's PR #1, merged on GitHub) | Done: FastAPI + Gemma 4 running **locally** + Google sign-in, 176 tests |
-| Live public data in the frontend (`lib/live`) | Done locally, **not committed yet** |
-| Onboarding redesign, Profile sections, Calendar "Why now" | Done locally, **not committed yet** |
+| Frontend (13 screens incl. Settings, 3 languages, voice, offline) | Done. **Google sign-in only, live data only** (demo mode removed) |
+| Backend | Done: FastAPI + Gemma 4 running **locally** + Google sign-in, district soil and monsoon data, date-aware calendar, 203 tests |
+| Onboarding (6 questions, soil found from location), Profile + Settings, Calendar year map | Done |
 | Automated frontend tests | **Not yet** (type-check and lint pass) |
 
 ## 4. The journey of one farmer (use this as your demo script)
 
-1. **Login** – dawn sky, hills, rising sun. Pick a language. "Sign in with Google" or "Try demo".
+1. **Login** – dawn sky, hills, rising sun. "Sign in with Google" (the only way in).
 2. **Consent** – a plain list: what we store, what we never store. Nothing is saved before "Agree".
-3. **Onboarding** – one question per screen: language, name, village, crops, land (required), then
-   9 optional ones (soil, water, sprayer tank size, experience...). Review screen at the end.
-4. **Home – "Aaj Ka Kaam"** – greeting, 4-day weather, 2–3 jobs sorted by priority, price chips,
-   a **Listen** button that reads it all aloud.
+3. **Onboarding** – six questions, one per screen: language, name, place, crops, land, water.
+   **Soil is never asked**: after the place, a card shows "Black soil in Nashik, 74% of fields low in
+   nitrogen" from Soil Health Card data. Review screen at the end.
+4. **Home – "Aaj Ka Kaam"** – a live sky card (weather now, place, how far into the season), the
+   **one most important job** in big type, each crop's usual stage today, 4-day weather, price
+   chips, a **Listen** button that reads it all aloud.
 5. **Crop Doctor** – take a photo of a leaf → disease, how sure the AI is, organic treatment first.
 6. **Label Reader** – photo of a pesticide bottle → dose **for your 15 L tank**. Blurry photo → no
-   number, only the helpline. (Demo trick: a file named `blur...` shows this.)
+   number, only the helpline.
 7. **Kagaz Samjho** – photo of a 7/12 extract or bank notice → summary, deadlines with "days left",
    next steps, and chips showing what was blanked out (Aadhaar, phone...).
 8. **Mandi** – nearby market prices, 30-day chart, and **Sell Smart**: enter quantity → "Sell now"
@@ -72,7 +73,6 @@ Read sections 1–4 out loud a few times; sections 5–12 are for when the jury 
 | **react-i18next** | Translations | 3 languages, each feature has its own translation files |
 | **vite-plugin-pwa (Workbox)** | Makes it an installable app with offline support | Farmers have patchy internet |
 | **Recharts** | Charts | The 30-day price chart, loaded only when needed |
-| **MSW** | Fake API in development | Build and demo the frontend before the backend existed |
 | **browser-image-compression** | Shrinks photos on the phone | Faster upload on 2G/3G, and it removes GPS data from photos |
 | **Firebase Auth** (added by PR #1) | Google sign-in | Free, secure, farmers already have Google accounts on Android |
 
@@ -88,12 +88,9 @@ frontend/src/
   lib/api/          types.ts (the data contract), client.ts (talks to the server), queries.ts (caching)
   lib/session.ts    where the login token plugs in
   lib/firebase.ts   Google sign-in, loaded only when used  (PR #1)
-  lib/demo.ts       demo mode
-  lib/live/         free public data: Open-Meteo weather, data.gov.in mandi prices
   components/ui/    our design system: buttons, cards, chips, icons, sheets, loading/error states
   components/voice/ recording, mic button, read-aloud
   features/<name>/  one folder per screen, with its own en/hi/mr translations
-  mocks/            fake answers for every API call (demo mode)
   i18n/             translation setup
 ```
 
@@ -131,8 +128,6 @@ Size: about 8,700 lines of TypeScript across ~120 files.
 - **Caching** (`queries.ts`): data is "fresh" for 5 minutes. Failed requests retry twice, but never
   on errors like "not found" or "not allowed" (no point). After the profile is saved, all other
   data is refreshed, because weather and prices depend on the village.
-- **Demo mode:** the same function answers from fake data inside the browser, with no internet.
-  A service worker can't be trusted on venue Wi-Fi, so demo mode never needs one.
 
 ## 9. Login and accounts (updated by PR #1)
 
@@ -147,10 +142,8 @@ Size: about 8,700 lines of TypeScript across ~120 files.
     the language).
   - **Delete my data:** first deletes everything on the server (needs the token), then deletes
     the Google account link in Firebase, then signs out.
-  - Sign-in is switched on only when the 4 Firebase settings are present. Without them, only demo
-    mode is offered.
-  - A developer-only shortcut (`VITE_DEV_SIGN_IN`) exists for local testing. It is ignored in real
-    builds, and the backend refuses to run that way in production.
+  - Google is the only way in: there is no demo mode and no developer shortcut in the app. The 4
+    Firebase settings must be present in the build.
 - The backend checks every token itself (correct algorithm, issuer, audience, expiry), and takes the
   user ID **only from the verified token**, never from what the app sends.
 
@@ -235,13 +228,12 @@ indicator, **Download my data** (a JSON file built on the phone), share the app,
   - weather, prices, brief and profile: try the network for 6 s, else use the saved copy (3 days);
   - **AI calls are never saved** (privacy rule);
   - fonts saved for a year.
-- **Live public data** (`lib/live`, uncommitted): weather from **Open-Meteo** (free, no key), mandi
-  prices from **data.gov.in Agmarknet** (government data). Order: fresh saved copy → network (6 s)
-  → old saved copy → built-in sample data. **The screen is never empty.** The government feed has
-  no history, so the app saves one price per day on the phone to draw the trend. Dates use Indian
-  time, not UTC.
-- **Speed:** screens load on demand, the chart library loads on demand, fake data only loads in demo
-  mode, photo shrinking runs in a background thread (web worker), font files are cut to size.
+- **Live data, through the backend:** weather from **Open-Meteo** (free, no key), mandi prices from
+  **data.gov.in Agmarknet**, stored daily on the server so the 30-day trend builds up. Soil and
+  monsoon onset per district come from Soil Health Card and IMD data shipped with the backend.
+  Dates use Indian time, not UTC.
+- **Speed:** screens load on demand, the chart library loads on demand, photo shrinking runs in a
+  background thread (web worker), font files are cut to size.
 
 ## 14. Security and privacy (expect questions here)
 
@@ -285,8 +277,8 @@ updates itself. Farmers can add it to the home screen.
 **Why TanStack Query and not Redux?** Almost all our data comes from the server. Query handles
 caching, retries and refresh for us. Screen-only state stays in normal React state.
 
-**How does it work offline?** Saved app files + saved API answers + saved live data + built-in sample
-data. Demo mode needs no internet at all.
+**How does it work offline?** Saved app files + the last API answers (weather, prices, brief,
+profile) kept by the service worker for 3 days. New AI answers need the internet.
 
 **What if the AI is wrong?** Below 60% confidence we show the Kisan Call Centre (1800-180-1551)
 instead of advice. A dose is shown only if it is printed on the label, and the multiplication is
@@ -348,9 +340,6 @@ through the app, and report how often it is right, and how often it correctly sa
 2. Read-aloud code is copied in 4 places (`brief`, `mandi`, `doctor` `useSpeech` +
    `components/voice/speech.ts`); should be one module.
 3. Scheme application form does not submit anywhere (by design: links to the official site).
-4. Google sign-in works but was not confirmed end-to-end from the backend log; live mandi prices on
-   the backend need a data.gov.in key.
-5. A lot of frontend work is still uncommitted (onboarding redesign, profile sections, `lib/live`,
-   calendar "Why now", mocks), and 2 local commits are not pushed.
-6. Merging PR #1 undid our small fix that writes the demo farmer's name in the chosen script
-   ("रमेश पाटील" in Marathi). In demo mode the name may show in English inside Marathi text.
+4. Live mandi prices on the backend need a data.gov.in key; without it the price cards stay empty.
+5. Crop stages are the usual Maharashtra calendar for the date, not the farmer's own sowing date
+   (asking for it is the next step).

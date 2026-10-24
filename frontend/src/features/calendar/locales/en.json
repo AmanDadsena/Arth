@@ -9,8 +9,8 @@
   },
   "seasonMonths": {
     "kharif": "Jun – Sep",
-    "rabi": "Oct – Feb",
-    "zaid": "Mar – May"
+    "rabi": "Oct – Jan",
+    "zaid": "Feb – May"
   },
   "now": "Now",
   "yourFarm": "Your farm",
@@ -36,7 +36,7 @@
   "emptyBody": "We have no recommendations for this season on your soil and water. Try another season or ask an expert.",
   "planEmpty": "The weekly plan for this crop isn't ready yet.",
   "expertReason": "Seed variety, fertiliser and spray doses depend on your field. Check with Kisan Call Centre or your local agriculture officer before buying.",
-  "basedOn": "Based on your soil and water from Profile",
+  "basedOn": "Soil from your district's Soil Health Card tests, water from your profile",
   "whyNow": {
     "teaser": "Why now",
     "title": "Why sow this now",
@@ -44,6 +44,39 @@
     "market": "Market",
     "news": "In the news",
     "readMore": "Opens {{source}} in a new tab",
-    "footnote": "Weather updates live; news from the sources shown."
+    "footnote": "Weather updates live; news from the sources shown.",
+    "soil": "Soil"
+  },
+  "today": "Today is {{date}}",
+  "seasonLine_one": "{{season}} sowing season · {{count}} day left",
+  "seasonLine_other": "{{season}} sowing season · {{count}} days left",
+  "map": {
+    "title": "Your farming year",
+    "a11y": "Farming year map, today {{date}}",
+    "onset": "Monsoon expected here around {{date}}"
+  },
+  "phase": {
+    "sow": "Sow / start",
+    "grow": "Growing",
+    "protect": "Watch & protect",
+    "harvest": "Harvest",
+    "rest": "Off season"
+  },
+  "field": { "title": "In your field now", "usually": "Usually now" },
+  "sowNow": "You can sow these now",
+  "comingUp": "Coming up",
+  "status": {
+    "open_one": "Open · {{count}} day left",
+    "open_other": "Open · {{count}} days left",
+    "upcoming_one": "Opens in {{count}} day",
+    "upcoming_other": "Opens in {{count}} days"
+  },
+  "followsMonsoon": "Follows the monsoon",
+  "onset": {
+    "title": "Monsoon here: around {{date}}",
+    "earlier": "That is {{days}} days earlier than the {{old}} the record started with, so kharif sowing here moves earlier too.",
+    "later": "That is {{days}} days later than the {{old}} the record started with, so kharif sowing here waits for it.",
+    "noChange": "No measurable shift here; kharif dates follow the long-term onset, not a fixed calendar date.",
+    "source": "IMD daily rainfall, {{years}}"
   }
 }

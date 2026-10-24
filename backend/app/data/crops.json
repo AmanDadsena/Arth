@@ -1,5 +1,5 @@
 {
-  "_note": "General Maharashtra crop-calendar guidance for demo use; confirm local dates with the nearest KVK. Windows are MM-DD. 'soils' lists soils the crop does well on; 'water' is how much assured irrigation it needs (low | medium | high). Suitability starts at 'base' and drops one level for an unsuited soil and one or two for rainfed farms on thirsty crops.",
+  "_note": "General Maharashtra crop-calendar guidance; confirm local dates with the nearest KVK. Windows are MM-DD. Kharif crops with 'onset' [from, to] are sown that many days after THE DISTRICT'S monsoon onset (data/districts.json, IMD record), so the window moves with the rain instead of a fixed date. 'soils' lists soils the crop does well on; 'water' is how much assured irrigation it needs (low | medium | high). Suitability starts at 'base' and drops one level for an unsuited soil and one or two for rainfed farms on thirsty crops.",
   "seasons": {
     "rabi": [
       {
@@ -28,7 +28,7 @@
         ]
       },
       {
-        "crop": "gram", "base": "high", "from": "10-15", "to": "11-15", "durationDays": 100,
+        "crop": "gram", "base": "high", "from": "10-15", "to": "11-15", "legume": true, "durationDays": 100,
         "soils": ["black", "alluvial", "clay", "red"], "water": "low",
         "name": { "en": "Gram (chana)", "hi": "चना", "mr": "हरभरा" },
         "why": { "en": "Needs little water and fixes nitrogen for your next crop.", "hi": "कम पानी चाहिए और अगली फसल के लिए नाइट्रोजन देता है।", "mr": "कमी पाणी लागते आणि पुढच्या पिकासाठी नत्र स्थिर करतो." },
@@ -37,11 +37,23 @@
           { "title": { "en": "Nipping", "hi": "खुंटाई", "mr": "शेंडे खुडणे" }, "tasks": [{ "en": "Nip tips at 30 days for more branches", "hi": "30 दिन पर सिरे तोड़ें", "mr": "30 दिवसांनी शेंडे खुडा" }] },
           { "title": { "en": "Pod borer watch", "hi": "फली छेदक पर नज़र", "mr": "घाटेअळीवर लक्ष" }, "tasks": [{ "en": "Put up bird perches", "hi": "पक्षियों के बैठने के ठिकाने लगाएँ", "mr": "पक्षी थांबे लावा" }] }
         ]
+      },
+      {
+        "crop": "potato", "base": "medium", "from": "10-15", "to": "11-15", "durationDays": 100,
+        "soils": ["alluvial", "red", "sandy", "black"], "water": "medium",
+        "name": { "en": "Potato", "hi": "आलू", "mr": "बटाटा" },
+        "why": { "en": "Cool nights from November suit tubers; sells well in towns nearby.", "hi": "नवंबर की ठंडी रातें कंद के लिए अच्छी; पास के शहरों में अच्छा बिकता है।", "mr": "नोव्हेंबरच्या थंड रात्री कंदासाठी चांगल्या; जवळच्या शहरात चांगला खपतो." },
+        "timeline": [
+          { "title": { "en": "Planting", "hi": "बुवाई", "mr": "लागवड" }, "tasks": [{ "en": "Plant healthy seed tubers on ridges", "hi": "मेड़ों पर स्वस्थ बीज कंद लगाएँ", "mr": "सरीवरंब्यावर निरोगी बेणे लावा" }] },
+          { "title": { "en": "Earthing up", "hi": "मिट्टी चढ़ाना", "mr": "भर देणे" }, "tasks": [{ "en": "Earth up at 30 days", "hi": "30 दिन पर मिट्टी चढ़ाएँ", "mr": "30 दिवसांनी भर द्या" }] },
+          { "title": { "en": "Late blight watch", "hi": "पछेती झुलसा पर नज़र", "mr": "उशिरा करप्यावर लक्ष" }, "tasks": [{ "en": "Check leaves after cold, damp nights", "hi": "ठंडी नम रातों के बाद पत्ते देखें", "mr": "थंड-दमट रात्रीनंतर पाने तपासा" }] },
+          { "title": { "en": "Harvest", "hi": "खुदाई", "mr": "काढणी" }, "tasks": [{ "en": "Cut haulms 10 days before digging", "hi": "खुदाई से 10 दिन पहले डंठल काटें", "mr": "काढणीपूर्वी 10 दिवस वेल कापा" }] }
+        ]
       }
     ],
     "kharif": [
       {
-        "crop": "soybean", "base": "high", "from": "06-15", "to": "07-10", "durationDays": 100,
+        "crop": "soybean", "base": "high", "from": "06-15", "to": "07-10", "onset": [0, 25], "legume": true, "durationDays": 100,
         "soils": ["black", "clay", "alluvial"], "water": "low",
         "name": { "en": "Soybean", "hi": "सोयाबीन", "mr": "सोयाबीन" },
         "why": { "en": "Sow after 75–100 mm of monsoon rain on black soil.", "hi": "काली मिट्टी पर 75–100 मिमी बारिश के बाद बोएँ।", "mr": "काळ्या मातीत 75–100 मिमी पावसानंतर पेरा." },
@@ -52,13 +64,36 @@
         ]
       },
       {
-        "crop": "tomato", "base": "medium", "from": "06-20", "to": "07-31", "durationDays": 130,
+        "crop": "tomato", "base": "medium", "from": "06-20", "to": "07-31", "onset": [5, 45], "durationDays": 130,
         "soils": ["black", "red", "alluvial", "laterite"], "water": "medium",
         "name": { "en": "Tomato", "hi": "टमाटर", "mr": "टोमॅटो" },
         "why": { "en": "Sells well in nearby markets; needs staking and good drainage.", "hi": "पास के बाज़ारों में अच्छा बिकता है; सहारा और अच्छी निकासी चाहिए।", "mr": "जवळच्या बाजारात चांगला विकतो; आधार आणि चांगला निचरा लागतो." },
         "timeline": [
           { "title": { "en": "Nursery", "hi": "नर्सरी", "mr": "रोपवाटिका" }, "tasks": [{ "en": "Raise seedlings under net", "hi": "जाली के नीचे पौध", "mr": "जाळीखाली रोपे" }] },
           { "title": { "en": "Staking", "hi": "सहारा", "mr": "आधार देणे" }, "tasks": [{ "en": "Stake at 3 weeks", "hi": "3 हफ्ते पर सहारा", "mr": "3 आठवड्यांनी आधार" }] }
+        ]
+      },
+      {
+        "crop": "cotton", "base": "medium", "from": "06-10", "to": "07-15", "onset": [0, 30], "durationDays": 180,
+        "soils": ["black", "clay"], "water": "medium",
+        "name": { "en": "Cotton", "hi": "कपास", "mr": "कापूस" },
+        "why": { "en": "Deep black soil holds the moisture cotton needs through the dry spells.", "hi": "गहरी काली मिट्टी सूखे दिनों में भी कपास के लिए नमी रखती है।", "mr": "खोल काळी माती कोरड्या दिवसांतही कापसाला ओल पुरवते." },
+        "timeline": [
+          { "title": { "en": "Sowing", "hi": "बुवाई", "mr": "लागवड" }, "tasks": [{ "en": "Sow after the monsoon sets in", "hi": "मानसून जमने के बाद बोएँ", "mr": "मान्सून स्थिर झाल्यावर लागवड करा" }] },
+          { "title": { "en": "Weeding + first dose", "hi": "निराई + पहली खाद", "mr": "खुरपणी + पहिला हप्ता" }, "tasks": [{ "en": "Weed at 3 and 6 weeks", "hi": "3 और 6 हफ्ते पर निराई", "mr": "3 व 6 आठवड्यांनी खुरपणी" }] },
+          { "title": { "en": "Pink bollworm traps", "hi": "गुलाबी सुंडी ट्रैप", "mr": "गुलाबी बोंडअळी सापळे" }, "tasks": [{ "en": "Set 2 pheromone traps per acre at flowering", "hi": "फूल आने पर प्रति एकड़ 2 फेरोमोन ट्रैप", "mr": "फुलोऱ्यात एकरी 2 कामगंध सापळे" }] },
+          { "title": { "en": "Picking", "hi": "चुनाई", "mr": "वेचणी" }, "tasks": [{ "en": "Pick dry, fully open bolls", "hi": "सूखे, पूरे खुले टिंडे चुनें", "mr": "कोरडी, पूर्ण उमललेली बोंडे वेचा" }] }
+        ]
+      },
+      {
+        "crop": "maize", "base": "medium", "from": "06-15", "to": "07-15", "onset": [0, 25], "durationDays": 110,
+        "soils": ["black", "red", "alluvial", "sandy"], "water": "medium",
+        "name": { "en": "Maize", "hi": "मक्का", "mr": "मका" },
+        "why": { "en": "Steady demand from poultry feed; fits well before a rabi crop.", "hi": "मुर्गी दाने की लगातार माँग; रबी फसल से पहले अच्छा बैठता है।", "mr": "कुक्कुटखाद्याची सतत मागणी; रब्बी पिकाआधी चांगले बसते." },
+        "timeline": [
+          { "title": { "en": "Sowing", "hi": "बुवाई", "mr": "पेरणी" }, "tasks": [{ "en": "Sow at 60 × 20 cm after good rain", "hi": "अच्छी बारिश के बाद 60 × 20 सेमी पर बोएँ", "mr": "चांगल्या पावसानंतर 60 × 20 सेमीवर पेरा" }] },
+          { "title": { "en": "Fall armyworm watch", "hi": "फॉल आर्मीवर्म पर नज़र", "mr": "लष्करी अळीवर लक्ष" }, "tasks": [{ "en": "Check the whorl every week", "hi": "हर हफ्ते पोंगली देखें", "mr": "दर आठवड्याला पोंगा तपासा" }] },
+          { "title": { "en": "Harvest", "hi": "कटाई", "mr": "काढणी" }, "tasks": [{ "en": "Harvest when husks dry", "hi": "छिलके सूखने पर तोड़ें", "mr": "आवरण वाळल्यावर काढा" }] }
         ]
       }
     ],

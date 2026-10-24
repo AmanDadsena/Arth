@@ -1,5 +1,6 @@
-"""Home-screen brief ("Aaj ka kaam"): 2–3 actions from weather, mandi and the
-crop calendar. Every source is optional: if one fails the brief still loads.
+"""Home-screen brief ("Aaj ka kaam"): 2–3 actions from weather, mandi, the
+crop calendar and the usual stage of the farmer's own crops on today's date.
+Every source is optional: if one fails the brief still loads.
 Rules pick the actions; no model call, so the home screen opens fast.
 """
 
@@ -8,23 +9,10 @@ import time
 from datetime import date
 
 from ..errors import ApiError
-from ..schemas import ActionItem, Brief, Lang, PriceAlert, ToolCallLog, WeatherDay
-from . import calendar, weather
+from ..schemas import ActionItem, Brief, FieldCrop, Lang, PriceAlert, ToolCallLog, WeatherDay
+from . import calendar, farm, weather
 from .mandi import MandiService
-
-CROP_NAMES = {
-    "onion": {"en": "onion", "hi": "प्याज़", "mr": "कांदा"},
-    "tomato": {"en": "tomato", "hi": "टमाटर", "mr": "टोमॅटो"},
-    "grapes": {"en": "grapes", "hi": "अंगूर", "mr": "द्राक्ष"},
-    "soybean": {"en": "soybean", "hi": "सोयाबीन", "mr": "सोयाबीन"},
-    "wheat": {"en": "wheat", "hi": "गेहूँ", "mr": "गहू"},
-    "gram": {"en": "gram", "hi": "चना", "mr": "हरभरा"},
-    "cotton": {"en": "cotton", "hi": "कपास", "mr": "कापूस"},
-    "potato": {"en": "potato", "hi": "आलू", "mr": "बटाटा"},
-    "pomegranate": {"en": "pomegranate", "hi": "अनार", "mr": "डाळिंब"},
-    "sugarcane": {"en": "sugarcane", "hi": "गन्ना", "mr": "ऊस"},
-    "maize": {"en": "maize", "hi": "मक्का", "mr": "मका"},
-}
+from .names import crop_name
 
 T = {
     "greet": {"en": "Namaste, {n}", "hi": "नमस्ते {n}", "mr": "नमस्कार {n}"},
@@ -48,13 +36,12 @@ T = {
     "sow_detail": {"en": "See the crop calendar for the week-by-week plan.",
                    "hi": "हफ्ते-दर-हफ्ते योजना फसल कैलेंडर में देखें।",
                    "mr": "आठवड्यानुसार नियोजन पीक दिनदर्शिकेत पहा."},
+    "field_title": {"en": "{c}: {stage}", "hi": "{c}: {stage}", "mr": "{c}: {stage}"},
 }
+# what a crop's usual stage today asks of the farmer, as an action
+_FIELD_ACTION = {"sow": ("sow", "medium"), "protect": ("protect", "medium"), "harvest": ("harvest", "medium")}
 SELL_ALERT_PCT = 3.0
 _PRIORITY = {"high": 0, "medium": 1, "low": 2}
-
-
-def crop_name(crop: str, lang: Lang) -> str:
-    return CROP_NAMES.get(crop, {}).get(lang, crop)
 
 
 async def _timed(log: list[ToolCallLog], name: str, args: dict, coro):
@@ -96,7 +83,17 @@ async def build(*, http, mandi: MandiService, profile: dict, lang: Lang, timeout
     raw_weather, *prices = await asyncio.gather(weather_task, *price_tasks)
 
     days = weather.parse_days(raw_weather)[:4] if raw_weather else []
+    current = weather.current(raw_weather) if raw_weather else None
     actions = weather_actions(days, lang)
+
+    # the farmer's own crops, where they usually stand today
+    field: list[FieldCrop] = calendar.in_field(profile.get("crops", []), today, lang)
+    for f in field:
+        if f.phase in _FIELD_ACTION:
+            kind, prio = _FIELD_ACTION[f.phase]
+            actions.append(ActionItem(id=f"field-{f.crop}", type=kind, priority=prio, source="calendar",
+                                      route="/calendar", title=T["field_title"][lang].format(c=f.name, stage=f.stage),
+                                      detail=f.task))
 
     alerts: list[PriceAlert] = []
     for crop, p in zip(crops, prices, strict=True):
@@ -115,18 +112,23 @@ async def build(*, http, mandi: MandiService, profile: dict, lang: Lang, timeout
 
     season = calendar.current_season(today)
     start = time.perf_counter()
-    cal = calendar.recommend(season, lang, profile.get("soilType"), profile.get("irrigation"), today)
+    district = farm.locate(lat, lon, profile.get("district"))
+    cal = calendar.recommend(season, lang, profile.get("soilType"), profile.get("irrigation"), today, district)
     tools.append(ToolCallLog(name="get_crop_calendar", args={"season": season},
                              ms=round((time.perf_counter() - start) * 1000)))
     sowable = [r for r in cal.recommendations
-               if r.suitability == "high" and r.sowing_window.from_ <= today.isoformat() <= r.sowing_window.to]
+               if r.suitability == "high" and r.status and r.status.phase == "open" and r.crop not in crops]
     if sowable:
         r = sowable[0]
+        until = calendar.short_date(r.sowing_window.to, lang)
         actions.append(ActionItem(id=f"sow-{r.crop}", type="sow", priority="low", source="calendar",
-                                  route="/calendar", title=T["sow_title"][lang].format(c=r.name, to=r.sowing_window.to),
+                                  route="/calendar",
+                                  title=T["sow_title"][lang].format(c=r.name, to=until),
                                   detail=T["sow_detail"][lang]))
 
     actions.sort(key=lambda a: _PRIORITY[a.priority])
     first = (profile.get("name") or "").split(" ")[0]
-    return Brief(greeting=T["greet"][lang].format(n=first).strip(" ,"), date=today.isoformat(), weather=days,
-                 actions=actions[:3], price_alerts=alerts, tool_calls=tools)
+    location = ", ".join(x for x in (profile.get("village"), profile.get("district")) if x)
+    return Brief(greeting=T["greet"][lang].format(n=first).strip(" ,"), date=today.isoformat(), location=location,
+                 current=current, weather=days, actions=actions[:3], price_alerts=alerts, in_field=field,
+                 season_now=calendar.season_now(today, lang), tool_calls=tools)

@@ -109,7 +109,8 @@
     "skipped": "Skipped",
     "assumed": "Not sure · using {{value}}",
     "fixFirst": "Fill in the rows marked Needed first",
-    "save": "Save changes"
+    "save": "Save changes",
+    "soilAuto": "Your soil is read from your district's Soil Health Card results, so we don't ask. You can correct it in Settings."
   },
   "row": {
     "lang": "Language",
@@ -126,5 +127,8 @@
     "goals": "Help wanted with",
     "sellsAt": "Sells at",
     "livestock": "Animals"
-  }
+  },
+  "soilFound": "{{soil}} soil in {{district}}",
+  "soilFoundBody": "From {{samples}} Soil Health Card tests: {{n}}% of fields here are low in nitrogen. Nothing to fill in.",
+  "soilFoundNoTests": "Read from your district. Nothing to fill in."
 }

@@ -16,14 +16,14 @@ export function BootScreen() {
 }
 
 /**
- * Signed in (or demo) → profile with consent → children.
+ * Signed in with Google → profile with consent → children.
  * No profile: /consent first, then /onboarding. `requireProfile={false}` is for
  * those two screens themselves.
  */
 export function ProtectedRoute({ children, requireProfile = true }: { children: ReactNode; requireProfile?: boolean }) {
   const { status } = useAuth()
   const location = useLocation()
-  const authed = status === 'signedIn' || status === 'demo'
+  const authed = status === 'signedIn'
   const farmer = useFarmer(authed)
 
   // follow the profile's language once per load, so a returning farmer lands in theirs

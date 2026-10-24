@@ -27,5 +27,19 @@
     "calendar": "काय, कधी पेरायचं",
     "schemes": "सरकारी योजना",
     "kagaz": "कागद समजून घ्या"
-  }
+  },
+  "topJob": "आजचे सर्वात महत्त्वाचे काम",
+  "open": "उघडा",
+  "alsoToday": "आज आणखी",
+  "inField": "आज तुमची पिके",
+  "fullCalendar": "पीक दिनदर्शिका",
+  "hero": {
+    "season": "{{season}} हंगाम",
+    "daysLeft_one": "{{count}} दिवस बाकी",
+    "daysLeft_other": "{{count}} दिवस बाकी",
+    "next": "पुढे: {{season}}, {{date}} पासून",
+    "rainToday": "आज {{p}}% पाऊस",
+    "noWeather": "हवामानाचा अंदाज आला की इथे दिसेल."
+  },
+  "seasons": { "kharif": "खरीप", "rabi": "रब्बी", "zaid": "उन्हाळी" }
 }

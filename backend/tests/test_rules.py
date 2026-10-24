@@ -1,6 +1,6 @@
 """Schemes rules engine and crop calendar: deterministic, so tested exhaustively."""
 
-from datetime import date
+from datetime import date, timedelta
 from itertools import product
 
 import pytest
@@ -111,3 +111,68 @@ def test_recommend_shape(season, lang):
     for c in r.recommendations:
         assert c.sowing_window.from_ <= c.sowing_window.to
         assert c.timeline and c.timeline[0].week == 1
+
+
+# --- automatic calendar: windows, stages, seasons ---
+
+
+def test_kharif_window_follows_district_onset():
+    from app.services import farm
+    nashik = farm.by_name("Nashik")
+    r = calendar.recommend("kharif", "en", "black", "drip", date(2027, 5, 20), nashik)
+    soy = next(c for c in r.recommendations if c.crop == "soybean")
+    assert soy.window_basis == "onset"
+    # Nashik's onset trend sits mid-June; soybean is sown 0-25 days after it
+    assert "2027-06-10" <= soy.sowing_window.from_ <= "2027-06-20"
+    assert soy.status.phase == "upcoming" and soy.status.days > 0
+
+
+def test_rabi_window_open_status():
+    r = calendar.recommend("rabi", "en", "black", "drip", date(2026, 10, 25))
+    gram = next(c for c in r.recommendations if c.crop == "gram")
+    assert gram.window_basis == "calendar"
+    assert gram.status.phase == "open" and gram.status.days == 21
+
+
+@pytest.mark.parametrize(("crop", "day", "phase"), [
+    ("grapes", date(2026, 10, 25), "sow"),       # fruit pruning
+    ("soybean", date(2026, 10, 25), "harvest"),
+    ("onion", date(2026, 10, 25), "sow"),        # rabi nursery
+    ("wheat", date(2027, 1, 20), "protect"),
+    ("watermelon", date(2026, 12, 1), "rest"),   # stage crossing new year
+])
+def test_field_stage(crop, day, phase):
+    f = calendar.field_stage(crop, day, "mr")
+    assert f is not None and f.phase == phase and 0 <= f.progress <= 1
+
+
+def test_every_stage_table_covers_the_year():
+    for crop in calendar._stages():
+        for n in range(365):
+            assert calendar.field_stage(crop, date(2026, 1, 1) + timedelta(days=n), "en"), (crop, n)
+
+
+def test_season_now():
+    s = calendar.season_now(date(2026, 10, 25), "en")
+    assert s.season == "rabi" and s.next_season == "zaid" and s.next_starts == "2027-02-01"
+    assert 0 < s.progress < 0.3 and s.days_left == 98
+
+
+def test_short_date():
+    assert calendar.short_date("2026-11-15", "en") == "15 Nov"
+    assert calendar.short_date("2026-11-15", "mr") == "15 नोव्हें"
+
+
+# --- soil from location ---
+
+
+def test_soil_from_location():
+    from app.services import farm
+    assert farm.soil_type(20.0, 73.79, None) == "black"           # Nashik
+    assert farm.soil_type(16.99, 73.3, None) == "laterite"        # Ratnagiri
+    assert farm.soil_type(None, None, "Gadchiroli") == "red"
+    assert farm.locate(None, None, "Aurangabad")["id"] == "Chhatrapati Sambhajinagar"
+    assert farm.nearest(28.6, 77.2) is None                        # Delhi: not ours
+    r = farm.report(20.08, 74.11, "Nashik", "en")
+    assert r.district == "Nashik" and r.samples > 1000
+    assert 0 < r.nitrogen.low <= 1 and r.tips[-1].startswith("These are district odds")

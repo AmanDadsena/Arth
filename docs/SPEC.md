@@ -14,7 +14,7 @@ same tokens, fonts, cards and bottom nav. The Login screen is the only new desig
 
 | Path | Owner |
 |---|---|
-| `frontend/src/app/`, `src/lib/`, `src/components/ui/`, `src/mocks/`, `src/i18n/` (common ns), `src/features/auth/`, `src/features/onboarding/`, `src/features/profile/` | Frontend lead |
+| `frontend/src/app/`, `src/lib/`, `src/components/ui/`, `src/i18n/` (common ns), `src/features/auth/`, `src/features/onboarding/`, `src/features/profile/` | Frontend lead |
 | `frontend/src/features/brief/`, `features/weather/` | Home agent |
 | `frontend/src/features/mandi/` | Market agent |
 | `frontend/src/features/doctor/`, `features/label/`, `features/kagaz/` | Vision agent |
@@ -28,23 +28,22 @@ i18n keys go under the feature's own namespace (e.g. `mandi.sellNow`) in `en/hi/
 ## 2. Frontend stack
 
 Vite + React 19 + TypeScript (strict), Tailwind v4 (`@theme` tokens from Rutu), react-router-dom 7,
-TanStack Query, react-i18next, vite-plugin-pwa, Recharts, MSW, browser-image-compression.
+TanStack Query, react-i18next, vite-plugin-pwa, Recharts, browser-image-compression.
 
 Env (`frontend/.env.local`, never committed):
 
 ```
 VITE_API_BASE_URL=
-VITE_USE_MOCKS=true
+VITE_FIREBASE_API_KEY=
+VITE_FIREBASE_AUTH_DOMAIN=
+VITE_FIREBASE_PROJECT_ID=
+VITE_FIREBASE_APP_ID=
 ```
 
-**Sign-in status:** Google sign-in (Firebase Auth) is deferred. The frontend has an auth seam
-(`src/lib/session.ts` + `features/auth/AuthProvider.tsx`): a provider registers a token getter and
-the API client attaches it as `Authorization: Bearer <token>`. Until it is wired in, only demo mode
-signs in. When Firebase is added it will need `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`,
-`VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_APP_ID`.
-
-Demo mode (`/login` → "Try demo without signing in") skips auth, forces mocks and loads the
-demo farmer: Ramesh, Niphad, Nashik, onion + grapes, 2.5 acres, black soil, 15 L tank, Marathi.
+**Sign-in:** Google sign-in (Firebase Auth) is the only way in. `features/auth/AuthProvider.tsx`
+registers the Firebase ID-token getter with `src/lib/session.ts` and the API client attaches it as
+`Authorization: Bearer <token>`. There is no demo mode, no mock API and no sample data: every
+screen is served by the backend with live data.
 
 ## 3. API contract
 
@@ -78,7 +77,8 @@ interface FarmerProfile {
   lon: number              // rounded to 2 decimals
   crops: string[]          // commodity ids: 'onion' | 'soybean' | 'tomato' | 'grapes' | 'cotton' | 'wheat' | ...
   landAcres: number
-  soilType: SoilType
+  soilType: SoilType       // never asked: filled from the district (Soil Health Card / soil map)
+  soilSource?: 'auto' | 'farmer' // 'farmer' = corrected in Settings and kept as given
   irrigation: Irrigation
   tankSizeLitres: number   // sprayer tank, usually 15 or 16
   consentAt: string | null // ISO timestamp the farmer agreed to the privacy notice
@@ -109,10 +109,33 @@ type FarmerProfileInput = Omit<FarmerProfile, 'createdAt' | 'updatedAt'>
 interface Brief {
   greeting: string               // localized, e.g. "नमस्कार रमेश"
   date: string
+  location: string               // "Niphad, Nashik"
+  current: CurrentWeather | null // conditions right now (same shape as Weather.current)
   weather: WeatherDay[]          // today + next 3 days
   actions: ActionItem[]          // 2–3, sorted by priority
   priceAlerts: PriceAlert[]
-  toolCalls: ToolCallLog[]       // what Gemma called (shown on About / for judges)
+  inField: FieldCrop[]           // the farmer's crops and their usual stage today
+  seasonNow: SeasonNow | null    // how far into the sowing season we are
+  toolCalls: ToolCallLog[]       // what was called (shown on About / for judges)
+}
+interface FieldCrop {
+  crop: string
+  name: string
+  phase: 'sow' | 'grow' | 'protect' | 'harvest' | 'rest'
+  stage: string                  // "Rabi onion nursery"
+  task: string                   // what that stage asks of the farmer
+  stageFrom: string              // ISO dates of this stage, this year
+  stageTo: string
+  progress: number               // 0..1 through the stage
+  year: { start: string; end: string; phase: FieldCrop['phase']; name: string }[] // MM-DD, whole year
+}
+interface SeasonNow {
+  season: Season
+  name: string
+  progress: number               // 0..1
+  daysLeft: number
+  nextSeason: Season
+  nextStarts: string
 }
 interface ActionItem {
   id: string
@@ -258,26 +281,60 @@ interface VoiceResponse {
 
 ### Calendar
 
-`GET /calendar?season=rabi&lang=mr` → `CalendarResponse` (soil/irrigation come from the profile)
+`GET /calendar?lang=mr[&season=rabi]` → `CalendarResponse`. Without `season` the backend uses
+today's season (IST). Soil and irrigation come from the profile; kharif windows follow the
+district's monsoon onset (IMD 1985–2025); rabi and summer windows are calendar dates.
 
 ```ts
 interface CalendarResponse {
-  season: Season
-  recommendations: CropRecommendation[]
+  season: Season                 // the season shown
+  today: string
+  currentSeason: Season | null   // today's season
+  seasonNow: SeasonNow | null
+  seasons: { season: Season; name: string; start: string; end: string }[] // MM-DD, for the year map
+  onset: {                       // the district's expected monsoon onset this year
+    district: string; expected: string; oldDate: string; shiftDays: number; significant: boolean; years: string
+  } | null
+  inField: FieldCrop[]
+  recommendations: CropRecommendation[] // best fit first; open windows before upcoming ones
 }
 interface CropRecommendation {
   crop: string
   name: string                   // localized
   suitability: 'high' | 'medium' | 'low'
   sowingWindow: { from: string; to: string }
+  windowBasis: 'onset' | 'calendar'
+  status: { phase: 'open' | 'upcoming'; days: number } // days left, or days until it opens
   durationDays: number
   why: string
-  whyNow?: {                     // why this crop, now
-    weather: string[]            // from the live forecast, e.g. "Good soil moisture after 42 mm rain this week"
-    market: string[]             // from mandi trends / MSP, e.g. "Gram MSP raised to ₹X/quintal"
+  whyNow: {                      // why this crop, now (null when there is no signal)
+    weather: string[]            // from the live forecast, e.g. "Dry week ahead: sow soon…"
+    market: string[]             // from live mandi prices, e.g. "Gram ₹5,600/quintal at Lasalgaon, up 4%"
+    soil: string[]               // from district Soil Health Card results / monsoon onset
     news: { headline: string; source: string; url: string; date: string }[] // real, dated, sourced
-  }
+  } | null
   timeline: { week: number; title: string; tasks: string[] }[]
+}
+```
+
+### Soil (from location, never asked)
+
+`GET /soil?lang=mr[&lat=20.08&lon=74.11&district=Nashik]` → `SoilReport`. With a point (used in
+onboarding before a profile exists) the nearest Maharashtra district; without one, the saved farm.
+404 `outside_maharashtra` when the point is in no district.
+
+```ts
+interface SoilReport {
+  district: string
+  districtLocal: string          // in the farmer's script
+  soilType: SoilType             // dominant soil of the district
+  basis: 'district'
+  cycle: string | null           // Soil Health Card testing cycle, e.g. "2025-26"
+  samples: number
+  nitrogen, phosphorus, potassium, organicCarbon: { low: number; medium: number; high: number } | null
+  deficient: Record<'sulphur' | 'zinc' | 'boron' | 'iron', number> // share of samples deficient
+  tips: string[]                 // localized; the last one always says these are district odds
+  source: string                 // Soil Health Card dashboard URL
 }
 ```
 
@@ -319,11 +376,11 @@ The most polished screen in the app, in Rutu's palette and fonts.
 - Language chips (मराठी · हिंदी · English) — picking one sets the app language.
 - Trust chips: "🔒 Photos never stored", "🗑️ Delete anytime", "🇮🇳 Made for Maharashtra".
 - Official Google sign-in button (white, Google "G" mark, per brand guidelines).
-- Secondary text button: "Try demo without signing in".
 - Footer link "Privacy Notice" opening a bottom sheet (what we store / never store / 30-day delete).
 - Must look right at 360 px and 414 px widths.
 
-Flow: `/login` → first sign-in → `/consent` → `/onboarding` → `/`.
+Flow: `/login` → first sign-in → `/consent` → `/onboarding` (6 questions: language, name, place,
+crops, land, water; soil is shown, not asked) → `/`. Profile → `/settings` for everything else.
 
 ## 5. Security & privacy rules
 

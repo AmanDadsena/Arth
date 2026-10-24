@@ -4,7 +4,7 @@ import { Badge, Card, EmptyState, EscalateCard, EyebrowLabel, Icon, IconButton, 
 import type { CropRecommendation } from '@/lib/api/types'
 import { fmtDate, useLang } from '@/i18n'
 import { addDays } from './season'
-import { SUIT_TONE } from './CropCard'
+import { SUIT_TONE, WindowBadge } from './CropCard'
 import { WhyNowSection, hasWhyNow } from './WhyNow'
 
 /** One crop's week-by-week plan: a vertical timeline of dots on a line. */
@@ -39,6 +39,9 @@ export function CropPlan({ rec, onBack }: { rec: CropRecommendation; onBack: () 
         </div>
         <div className="num mt-1.5 text-[22px] font-semibold text-ink">
           {fmtDate(rec.sowingWindow.from, lang)} – {fmtDate(rec.sowingWindow.to, lang)}
+        </div>
+        <div className="mt-2">
+          <WindowBadge rec={rec} />
         </div>
         <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[15px] text-muted">
           <span className="inline-flex items-center gap-1.5">
