@@ -69,14 +69,21 @@ async def health(request: Request):
 # --- farmer profile -------------------------------------------------------------
 
 
-@router.get("/farmer/me", response_model=FarmerProfile)
+# Optional onboarding answers: stored and returned only when given, so the frontend
+# sees "missing" (undefined), never null, as types.ts declares them.
+_OPTIONAL_PROFILE_KEYS = {"experienceYears", "landOwnership", "farmingType", "goals", "sellsAt", "livestock"}
+
+
+@router.get("/farmer/me", response_model=FarmerProfile, response_model_exclude_unset=True)
 def get_farmer(request: Request, user: Auth):
     return _profile(request, user)
 
 
-@router.put("/farmer/me", response_model=FarmerProfile)
+@router.put("/farmer/me", response_model=FarmerProfile, response_model_exclude_unset=True)
 def put_farmer(request: Request, user: Auth, body: FarmerProfileInput):
-    return _db(request).put_profile(user.uid, body.model_dump(by_alias=True))
+    data = body.model_dump(by_alias=True)
+    data = {k: v for k, v in data.items() if not (k in _OPTIONAL_PROFILE_KEYS and v is None)}
+    return _db(request).put_profile(user.uid, data)
 
 
 @router.delete("/farmer/me", response_model=DeleteResult)

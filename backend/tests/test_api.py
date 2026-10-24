@@ -437,3 +437,50 @@ def test_health_not_ready_until_loaded_and_starts_warm_up(client, net):
     client.post("/api/ai/crop-doctor", headers=A, files=img())
     # a different num_ctx makes Ollama reload the model on the first real request
     assert warmups[0]["options"]["num_ctx"] == net.llm_requests[-1]["options"]["num_ctx"]
+
+
+# --- optional onboarding answers (frontend commit 7b29e0f) ------------------------
+
+BASICS = {"experienceYears": 7, "landOwnership": "lease", "farmingType": "mixed",
+          "goals": ["better_price", "schemes", "better_price"], "sellsAt": ["mandi", "fpo"],
+          "livestock": ["cow", "goat"]}
+
+
+def test_profile_with_onboarding_answers_roundtrip(client):
+    r = put_profile(client, **BASICS)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["goals"] == ["better_price", "schemes"]  # duplicates removed, order kept
+    assert {k: body[k] for k in ("experienceYears", "landOwnership", "farmingType", "sellsAt", "livestock")} == \
+        {k: BASICS[k] for k in ("experienceYears", "landOwnership", "farmingType", "sellsAt", "livestock")}
+    assert client.get("/api/farmer/me", headers=A).json() == body
+
+
+def test_unanswered_questions_are_absent_not_null(client):
+    body = put_profile(client).json()
+    for key in BASICS:
+        assert key not in body
+    assert body["consentAt"] == PROFILE["consentAt"]  # required-by-contract fields still present
+    stored = client.get("/api/farmer/me", headers=A).json()
+    assert not set(BASICS) & set(stored)
+
+
+def test_profile_consent_null_is_returned(client):
+    body = put_profile(client, consentAt=None).json()
+    assert "consentAt" in body and body["consentAt"] is None
+
+
+@pytest.mark.parametrize("bad", [
+    {"experienceYears": -1}, {"experienceYears": 200}, {"landOwnership": "rent"},
+    {"farmingType": "hydroponic"}, {"goals": ["get_rich"]}, {"sellsAt": ["amazon"]},
+    {"livestock": ["dragon"]}, {"goals": ["more_yield"] * 7},
+])
+def test_onboarding_answers_validated(client, bad):
+    r = put_profile(client, **bad)
+    assert r.status_code == 400 and r.json()["error"]["code"] == "invalid_request"
+
+
+def test_editing_profile_can_drop_answers(client):
+    put_profile(client, **BASICS)
+    body = put_profile(client).json()  # re-saved without the optional answers
+    assert "goals" not in body and "livestock" not in body
