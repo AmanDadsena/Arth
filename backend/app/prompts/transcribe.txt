@@ -1,0 +1,6 @@
+# Speech to text: Gemma 4's own audio input transcribes the farmer's recording.
+# Plain text out. The backend redacts the transcript before any other step sees it.
+Transcribe the attached audio exactly as spoken.
+Write it in the script the speaker uses: Devanagari for Hindi and Marathi, Latin letters for English.
+Reply with only the spoken words: no translation, no notes, no quotation marks.
+If nothing intelligible is spoken, reply with an empty message.

@@ -220,6 +220,22 @@ def test_crop_doctor(client, net):
     assert r.headers["cache-control"] == "no-store"
 
 
+def test_crop_doctor_without_symptoms_escalates(client, net):
+    """Live finding: a drawn leaf got a confident diagnosis with no symptoms listed."""
+    net.llm_replies.append({**DOCTOR_OK, "confidence": 0.9, "symptoms": []})
+    assert client.post("/api/ai/crop-doctor", headers=A, files=img()).json()["escalate"] is True
+    net.llm_replies.append({**DOCTOR_OK, "confidence": 0.9, "symptoms": ["null"]})
+    assert client.post("/api/ai/crop-doctor", headers=A, files=img()).json()["escalate"] is True
+
+
+def test_label_placeholder_words_become_empty(client, net):
+    """Live finding: E2B wrote the word "null" as the product name on a blurred label."""
+    net.llm_replies.append({**LABEL_OK, "product_name": "null", "active_ingredient": "None",
+                            "formulation": "N/A", "photo_problem": "blurry"})
+    d = client.post("/api/ai/label-reader", headers=A, files=img()).json()
+    assert (d["productName"], d["activeIngredient"], d["formulation"]) == ("", "", None)
+
+
 def test_crop_doctor_low_confidence_escalates(client, net):
     net.llm_replies.append({**DOCTOR_OK, "confidence": 0.4})
     assert client.post("/api/ai/crop-doctor", headers=A, files=img()).json()["escalate"] is True
@@ -406,3 +422,18 @@ def test_health(client, net):
     assert client.get("/api/health").json()["modelReady"] is True
     net.ollama_up = False
     assert client.get("/api/health").json()["modelReady"] is False
+
+
+def test_health_not_ready_until_loaded_and_starts_warm_up(client, net):
+    """Live finding: an installed-but-unloaded model reported ready and the first call timed out."""
+    net.model_loaded = False
+    before = len(net.llm_requests)
+    assert client.get("/api/health").json()["modelReady"] is False
+    client.get("/api/health")  # a second check must not start a second warm-up
+    warmups = net.llm_requests[before:]
+    assert len(warmups) == 1 and warmups[0]["options"]["num_predict"] == 1
+    assert warmups[0]["messages"][0]["images"]  # vision encoder warmed too
+    net.llm_replies.append(DOCTOR_OK)
+    client.post("/api/ai/crop-doctor", headers=A, files=img())
+    # a different num_ctx makes Ollama reload the model on the first real request
+    assert warmups[0]["options"]["num_ctx"] == net.llm_requests[-1]["options"]["num_ctx"]

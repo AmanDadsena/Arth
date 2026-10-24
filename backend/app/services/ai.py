@@ -47,6 +47,16 @@ def _clamp01(x: float) -> float:
     return max(0.0, min(1.0, x))
 
 
+_PLACEHOLDERS = {"", "null", "none", "n/a", "na", "unknown", "-", "not visible", "not specified"}
+
+
+def _text(v: str | None) -> str | None:
+    """Small models sometimes write the word "null" instead of a JSON null (live finding)."""
+    if v is None or v.strip().lower() in _PLACEHOLDERS:
+        return None
+    return v.strip()
+
+
 # --- Label reader ---------------------------------------------------------------
 
 
@@ -79,9 +89,9 @@ async def read_label(llm: LLM, image_b64: str, lang: Lang, tank_litres: float, c
                         basis=out.dose_basis, water_litres_per_area=out.water_litres_per_area,
                         tank_litres=tank_litres)
     return LabelReading(
-        product_name=out.product_name,
-        active_ingredient=out.active_ingredient,
-        formulation=out.formulation,
+        product_name=_text(out.product_name) or "",
+        active_ingredient=_text(out.active_ingredient) or "",
+        formulation=_text(out.formulation),
         dose_per_tank=DosePerTank(amount=dose.amount, unit=dose.unit) if dose else None,
         tank_size_litres=tank_litres,
         waiting_period_days=out.waiting_period_days if readable else None,
@@ -113,13 +123,15 @@ async def diagnose(llm: LLM, image_b64: str, lang: Lang, crop: str | None) -> Cr
     confidence = _clamp01(out.confidence)
     return CropDiagnosis(
         diagnosis=out.diagnosis,
-        scientific_name=out.scientific_name,
+        scientific_name=_text(out.scientific_name),
         confidence=round(confidence, 2),
         severity=out.severity,
         symptoms=out.symptoms,
         treatment=Treatment(organic=out.treatment.organic[:6], chemical=out.treatment.chemical[:4]),
         prevention=out.prevention,
-        escalate=out.unsure or confidence < ESCALATE_BELOW,
+        # A diagnosis with no visible symptoms is a guess, whatever confidence the model claims
+        # (live finding: a drawn, non-real leaf got "whitefly, 0.9" with no symptoms).
+        escalate=out.unsure or confidence < ESCALATE_BELOW or not [s for s in out.symptoms if _text(s)],
         model=llm.label,
     )
 

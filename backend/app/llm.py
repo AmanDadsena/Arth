@@ -9,6 +9,8 @@
 """
 
 import asyncio
+import base64
+import io
 import json
 import logging
 import time
@@ -28,6 +30,16 @@ LANG_NAMES = {"en": "English", "hi": "Hindi (Devanagari script)", "mr": "Marathi
 T = TypeVar("T", bound=BaseModel)
 
 
+def _tiny_jpeg() -> str:
+    from PIL import Image
+    buf = io.BytesIO()
+    Image.new("RGB", (64, 64), (60, 140, 50)).save(buf, format="JPEG")
+    return base64.b64encode(buf.getvalue()).decode()
+
+
+_WARM_IMAGE = _tiny_jpeg()
+
+
 @cache
 def prompt(name: str) -> str:
     text = (PROMPTS / f"{name}.txt").read_text(encoding="utf-8")
@@ -45,6 +57,8 @@ class LLM:
         self._timeout = timeout_s
         self._num_ctx = num_ctx
         self._sem = asyncio.Semaphore(max_concurrency)
+        self._warming: asyncio.Task | None = None
+        self._last_warm = -30.0
 
     async def _chat(self, messages: list[dict], schema: dict | None, temperature: float,
                     deadline: float) -> str:
@@ -102,20 +116,63 @@ class LLM:
                 ]
         raise ApiError(502, "ai_bad_output", "The assistant could not read this clearly. Please try again.")
 
+    async def transcribe(self, wav_b64: str, lang_name: str, timeout_s: float) -> str:
+        """Speech to text with Gemma's own audio input (plain text out, no schema).
+
+        Ollama takes audio in the same `images` list as pictures; we always send
+        16 kHz mono WAV, converted in memory by stt.py.
+        """
+        deadline = time.monotonic() + timeout_s
+        messages = [
+            {"role": "system", "content": prompt("transcribe")},
+            {"role": "user", "content": f"The speaker uses {lang_name}.", "images": [wav_b64]},
+        ]
+        return (await self._chat(messages, None, 0.0, deadline)).strip()
+
     async def ready(self) -> bool:
+        """True only when the model is loaded in memory, not merely installed.
+
+        Live finding: "installed" reported ready while the model was still loading,
+        and the first request then hit the timeout. If it isn't loaded (startup, or
+        unloaded after keep_alive), start a warm-up in the background.
+        """
         try:
-            r = await self._http.post(self._url.replace("/api/chat", "/api/show"),
-                                      json={"model": self.model}, timeout=2.0)
-            return r.status_code == 200
-        except httpx.HTTPError:
+            r = await self._http.get(self._url.replace("/api/chat", "/api/ps"), timeout=2.0)
+            r.raise_for_status()
+            loaded = {m.get("name") for m in r.json().get("models", [])} | {
+                m.get("model") for m in r.json().get("models", [])}
+        except (httpx.HTTPError, ValueError):
             return False
+        warming = self._warming is not None and not self._warming.done()
+        if self.model in loaded:
+            # Ollama lists a model as soon as loading *starts*; it is only ready once
+            # our warm-up (which also initialises vision) has finished.
+            return not warming
+        # One warm-up at a time, and at most every 30 s, so frequent health checks
+        # can't flood Ollama with load requests if loading keeps failing.
+        if not warming and time.monotonic() - self._last_warm >= 30:
+            self.start_warm_up()
+        return False
+
+    def start_warm_up(self) -> asyncio.Task:
+        self._last_warm = time.monotonic()
+        self._warming = asyncio.create_task(self.warm_up())
+        return self._warming
 
     async def warm_up(self) -> None:
-        """Load the model into memory so the first farmer request isn't slow."""
+        """Load the model, including its vision encoder, so the first farmer request isn't slow.
+
+        A tiny image initialises the vision encoder as well, and num_ctx must match real
+        calls, or Ollama reloads the model on the first farmer request.
+        """
         try:
             await self._http.post(self._url, timeout=120.0, json={
-                "model": self.model, "messages": [{"role": "user", "content": "ok"}],
-                "stream": False, "keep_alive": "30m", "options": {"num_predict": 1},
+                "model": self.model,
+                "messages": [{"role": "user", "content": "ok", "images": [_WARM_IMAGE]}],
+                "stream": False, "keep_alive": "30m", "think": False,
+                # Same num_ctx as real calls: Ollama reloads the model when it changes (live finding:
+                # a warm-up without it made the first farmer request pay a second ~11 s load).
+                "options": {"num_predict": 1, "num_ctx": self._num_ctx},
             })
         except httpx.HTTPError:
             log.warning("model warm-up failed; is Ollama running?")

@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     llm_num_ctx: int = 8192
 
     # --- Speech to text ---
-    stt_backend: Literal["whisper", "gemma"] = "whisper"
+    stt_backend: Literal["gemma", "whisper"] = "gemma"  # gemma = Gemma 4 native audio (no extra download)
     whisper_model: str = "small"
     whisper_device: str = "cpu"
     whisper_compute_type: str = "int8"

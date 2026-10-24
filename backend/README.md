@@ -29,7 +29,7 @@ origin. With the Firebase values set, sign-in is real Google sign-in. Without th
 Interactive API docs: http://localhost:8000/docs (development only).
 
 ```bash
-pytest          # 160 tests, no network or model needed
+pytest          # 176 tests, no network or model needed
 ruff check .    # lint + security rules
 ```
 
@@ -40,7 +40,7 @@ React PWA ──HTTPS + Firebase ID token──▶ FastAPI
                                           ├─ auth.py        verify Google-signed JWT, uid from `sub` only
                                           ├─ middleware.py  rate limit, size cap, security headers
                                           ├─ media.py       sniff + re-encode images (EXIF/GPS dropped)
-                                          ├─ stt.py         faster-whisper (CPU) speech → text
+                                          ├─ stt.py         Gemma 4 native audio → text (faster-whisper as fallback)
                                           ├─ llm.py ───────▶ Ollama · Gemma 4 E2B (local, JSON schema output)
                                           ├─ pii.py         Aadhaar (Verhoeff) / PAN / IFSC / account / phone / email
                                           ├─ services/      dose · schemes · calendar · weather · mandi · brief
@@ -64,7 +64,7 @@ plain, unit-tested code. When a value is missing or confidence is below 0.6 the 
 | `POST /ai/crop-doctor` | Gemma vision → diagnosis; low confidence escalates |
 | `POST /ai/label-reader` | Gemma copies label values → Python computes the dose for your tank |
 | `POST /ai/explain-document` | Gemma explains; every string PII-redacted; needs `consent=true` |
-| `POST /ai/voice` | Whisper → redacted transcript → Gemma intent; routes/fields whitelisted |
+| `POST /ai/voice` | Gemma 4 audio → redacted transcript → Gemma intent; routes/fields whitelisted |
 | `GET /calendar`, `POST /schemes/match` | Rules over JSON data, no model |
 
 ## Security and privacy
@@ -111,7 +111,8 @@ Frontend (`frontend/`, owned by the frontend lead), when they wire it in:
 | Component | License |
 |---|---|
 | Gemma 4 E2B (Google DeepMind), via Ollama | Apache-2.0 (model), MIT (Ollama) |
-| faster-whisper + Whisper weights | MIT |
+| PyAV (audio decoding) | BSD-3-Clause |
+| faster-whisper + Whisper weights (optional STT fallback) | MIT |
 | FastAPI, Pydantic, Uvicorn, PyJWT, Ruff, pytest | MIT |
 | httpx, python-multipart | BSD-3-Clause / Apache-2.0 |
 | cryptography | Apache-2.0 / BSD |

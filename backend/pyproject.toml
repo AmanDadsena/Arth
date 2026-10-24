@@ -14,7 +14,8 @@ dependencies = [
     "cryptography>=43",
     "pillow>=11",
     "python-multipart>=0.0.18",
-    "faster-whisper>=1.1",
+    "av>=12",  # in-memory audio decoding (webm/ogg/mp4 -> 16 kHz WAV)
+    "faster-whisper>=1.1",  # optional STT fallback (ARTH_STT_BACKEND=whisper)
 ]
 
 [project.optional-dependencies]

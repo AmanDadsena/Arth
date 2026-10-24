@@ -104,6 +104,7 @@ class FakeNet:
         self.mandi_ok = True
         self.weather_ok = True
         self.ollama_up = True
+        self.model_loaded = True
         self.jwks_calls = 0
         self.jwks_ok = True
         self.requests: list[httpx.Request] = []
@@ -124,8 +125,11 @@ class FakeNet:
             reply = self.llm_replies.pop(0) if self.llm_replies else {}
             content = reply if isinstance(reply, str) else json.dumps(reply)
             return httpx.Response(200, json={"message": {"role": "assistant", "content": content}})
-        if request.url.host == "127.0.0.1" and request.url.path == "/api/show":
-            return httpx.Response(200 if self.ollama_up else 404, json={})
+        if request.url.host == "127.0.0.1" and request.url.path == "/api/ps":
+            if not self.ollama_up:
+                raise httpx.ConnectError("down")
+            models = [{"name": "gemma4:e2b", "model": "gemma4:e2b"}] if self.model_loaded else []
+            return httpx.Response(200, json={"models": models})
         if request.url.host == "api.open-meteo.com":
             return httpx.Response(200, json=self.forecast) if self.weather_ok else httpx.Response(500)
         if request.url.host == "geocoding-api.open-meteo.com":

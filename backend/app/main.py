@@ -17,7 +17,7 @@ from .llm import LLM
 from .middleware import ProtectionMiddleware
 from .routers import router
 from .services.mandi import MandiService
-from .stt import WhisperSTT
+from .stt import GemmaSTT, WhisperSTT
 
 log = logging.getLogger("arth")
 
@@ -49,8 +49,10 @@ def create_app(settings: Settings | None = None, *, http: httpx.AsyncClient | No
         s.llm = LLM(client, settings.ollama_url, settings.model, label=settings.model_label,
                     timeout_s=settings.llm_timeout_s, max_concurrency=settings.llm_max_concurrency,
                     num_ctx=settings.llm_num_ctx)
-        s.stt = stt or WhisperSTT(settings.whisper_model, settings.whisper_device,
-                                  settings.whisper_compute_type, settings.max_audio_seconds)
+        s.stt = stt or (
+            GemmaSTT(s.llm, settings.max_audio_seconds) if settings.stt_backend == "gemma"
+            else WhisperSTT(settings.whisper_model, settings.whisper_device,
+                            settings.whisper_compute_type, settings.max_audio_seconds))
         s.mandi = MandiService(client, db, api_key=settings.data_gov_in_api_key,
                                resource_id=settings.mandi_resource_id, state=settings.mandi_state,
                                rs_per_quintal_km=settings.transport_rs_per_quintal_km,
@@ -60,7 +62,7 @@ def create_app(settings: Settings | None = None, *, http: httpx.AsyncClient | No
         tasks = [asyncio.create_task(_purge_loop(db))]
         if warm_up:
             # Load both models in the background so the first farmer request is fast.
-            tasks.append(asyncio.create_task(s.llm.warm_up()))
+            tasks.append(s.llm.start_warm_up())  # tracked, so /health stays "not ready" until done
             tasks.append(asyncio.create_task(s.stt.load()))
         try:
             yield
