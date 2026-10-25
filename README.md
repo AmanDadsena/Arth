@@ -2,6 +2,8 @@
 
 > **"What should I do on my farm today?" — answered every morning, for smallholder farmers in Maharashtra, in Marathi, Hindi and English.**
 
+**🌐 Live demo: <https://alt-soul-absolutely-compliance.trycloudflare.com>** (sign in with Google). It is served from our team laptop, where Gemma 4 runs locally, so it is up while the laptop is on; if it doesn't load, see [Run it locally](#run-it-locally).
+
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![React](https://img.shields.io/badge/React-19-61dafb.svg?logo=react&logoColor=black)](frontend/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Strict-blue.svg?logo=typescript&logoColor=white)](frontend/)
