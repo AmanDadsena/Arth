@@ -4,7 +4,7 @@
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg?logo=fastapi&logoColor=white)](app/)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776ab.svg?logo=python&logoColor=white)](pyproject.toml)
-[![Tests](https://img.shields.io/badge/Tests-203%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-268%20passing-brightgreen.svg)](tests/)
 [![AI](https://img.shields.io/badge/LLM-Gemma_4_E2B_via_Ollama-orange.svg)](https://ollama.com)
 [![STT](https://img.shields.io/badge/STT-Gemma_4_Native_%2B_faster--whisper-blue.svg)](app/stt.py)
 [![Security](https://img.shields.io/badge/Storage-AES--256--GCM-success.svg)](app/db.py)
