@@ -282,25 +282,9 @@ service worker works here, unlike under `npm run dev`. For a tunnel link, add it
 under Firebase → Authentication → Settings → **Authorized domains**, or Google sign-in
 fails there; the host changes each time the tunnel restarts.
 
-The link only works while the laptop is awake. `tunnel.ps1` keeps it awake while it runs
-(`scripts/keep-awake.ps1` does the same on its own); the tunnel reconnects by itself, with the
-same address, after a wake. Closing the lid still sleeps.
-
-**Always on, fixed address.** Run Arth unattended from this laptop:
-
-```powershell
-.\scripts\install-autostart.ps1                              # start at Windows sign-in (undo: uninstall-autostart.ps1)
-.\scripts\setup-named-tunnel.ps1 -Hostname arth.example.in   # once: a fixed https:// address on your domain
-.\scripts\start-arth.ps1 / .\scripts\stop-arth.ps1           # by hand
-```
-
-`start-arth.ps1` waits for Ollama (which starts itself at sign-in), serves the app and API
-in the background, and opens the public link while keeping the laptop awake. Logs and the
-current address are in `%LOCALAPPDATA%\Arth\logs` (`public-url.txt`). The fixed address needs
-a free Cloudflare account with your domain added to it; `setup-named-tunnel.ps1` signs in
-through the browser, creates the tunnel and its DNS record, and the tunnel credentials stay in
-`~/.cloudflared` (never commit them). Add the hostname to Firebase Authorized domains once.
-The scripts use PowerShell 7 (`pwsh`).
+The link only works while the laptop is awake. `tunnel.ps1` keeps it awake while it runs
+(`scripts/keep-awake.ps1` does the same on its own); the tunnel reconnects by itself, with the
+same address, after a wake. Closing the lid still sleeps.
 
 ### Rebuilding the district data (optional)
 
