@@ -282,6 +282,10 @@ service worker works here, unlike under `npm run dev`. For a tunnel link, add it
 under Firebase → Authentication → Settings → **Authorized domains**, or Google sign-in
 fails there; the host changes each time the tunnel restarts.
 
+The link only works while the laptop is awake. `tunnel.ps1` keeps it awake while it runs
+(`scripts/keep-awake.ps1` does the same on its own); the tunnel reconnects by itself, with the
+same address, after a wake. Closing the lid still sleeps.
+
 ### Rebuilding the district data (optional)
 
 ```bash
